@@ -1,0 +1,8 @@
+{
+    "name": "retail-system",
+    "private": true,
+    "workspaces": [
+        "apps/*",
+        "packages/*"
+    ]
+}
