@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum transaction_status_enum {
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum payment_status_enum {
+  SUCCESS
+  FAILED
+  PENDING
+}
+
+enum payment_method_enum {
+  CASH
+  CREDIT_CARD
+  DEBIT_CARD
+  UPI
+  WALLET
+  STORE_CREDIT
+  GIFT_CARD
+}
+
+enum refund_status_enum {
+  PARTIAL
+  FULL
+}
+
+model branches {
+  branch_id   Int     @id @default(autoincrement())
+  branch_name String
+  location    String
+  is_active   Boolean @default(true)
+
+  sales_transactions sales_transactions[]
+}
+
+model customers {
+  customer_id       Int      @id @default(autoincrement())
+  first_name        String?
+  last_name         String?
+  phone             String?  @unique
+  email             String?  @unique
+  address           String?
+  city              String?
+  country           String?
+  registration_date DateTime @default(now())
+  is_active         Boolean  @default(true)
+
+  sales_transactions sales_transactions[]
+  customer_feedback  customer_feedback[]
+}
+
+model customer_feedback {
+  feedback_id   Int      @id @default(autoincrement())
+  customer_id   Int?
+  rating        Int
+  comments      String?
+  feedback_date DateTime @default(now())
+
+  customers customers? @relation(fields: [customer_id], references: [customer_id])
+}
+
+model sales_transactions {
+  transaction_id     BigInt                   @id @default(autoincrement())
+  branch_id          Int
+  invoice_number String @default(dbgenerated())
+  customer_id        Int?
+  total_amount       Decimal
+  other_discount     Decimal                  @default(0)
+  tax_amount         Decimal                  @default(0)
+  net_amount         Decimal
+  transaction_status transaction_status_enum  @default(COMPLETED)
+  transaction_date   DateTime                 @default(now())
+  processed_by       Int
+  payment_verified   Boolean                  @default(false)
+
+  branches  branches  @relation(fields: [branch_id], references: [branch_id])
+  customers customers? @relation(fields: [customer_id], references: [customer_id])
+
+  sales_items sales_items[]
+  payments    payments[]
+  refunds     refund_transactions[]
+  documents   invoice_documents[]
+}
+
+model sales_items {
+  sales_item_id  BigInt  @id @default(autoincrement())
+  transaction_id BigInt
+  product_id     Int
+  batch_id       Int?
+  quantity_sold  Int
+  selling_price  Decimal
+  discount       Decimal @default(0)
+  total_price    Decimal
+
+  sales_transactions sales_transactions @relation(fields: [transaction_id], references: [transaction_id])
+}
+
+model payments {
+  payment_id        BigInt             @id @default(autoincrement())
+  transaction_id    BigInt
+  payment_method    payment_method_enum
+  amount            Decimal
+  payment_status    payment_status_enum @default(SUCCESS)
+  payment_reference String?
+
+  sales_transactions sales_transactions @relation(fields: [transaction_id], references: [transaction_id])
+}
+
+model refund_transactions {
+  refund_id               BigInt             @id @default(autoincrement())
+  original_transaction_id BigInt
+  refund_date             DateTime           @default(now())
+  refund_reason           String?
+  refund_status           refund_status_enum
+
+  sales_transactions sales_transactions @relation(fields: [original_transaction_id], references: [transaction_id])
+
+  refund_items refund_items[]
+}
+
+model refund_items {
+  refund_item_id     BigInt  @id @default(autoincrement())
+  refund_id          BigInt
+  product_id         Int?
+  batch_id           Int?
+  quantity_returned  Int
+  refund_amount      Decimal
+
+  refund_transactions refund_transactions @relation(fields: [refund_id], references: [refund_id])
+}
+
+model invoice_documents {
+  document_id    BigInt   @id @default(autoincrement())
+  transaction_id BigInt
+  file_url       String
+  uploaded_at    DateTime @default(now())
+
+  sales_transactions sales_transactions @relation(fields: [transaction_id], references: [transaction_id])
+}

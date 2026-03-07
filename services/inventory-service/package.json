@@ -1,0 +1,33 @@
+{
+    "name": "inventory-service",
+    "version": "1.0.0",
+    "description": "Inventory microservice for retail system",
+    "main": "dist/server.js",
+    "scripts": {
+        "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+        "build": "tsc",
+        "start": "node dist/server.js",
+        "prisma:generate": "prisma generate"
+    },
+    "dependencies": {
+        "@prisma/client": "^5.22.0",
+        "cors": "^2.8.6",
+        "dotenv": "^16.6.1",
+        "express": "^4.22.1",
+        "ioredis": "^5.10.0",
+        "redis": "^4.6.7",
+        "winston": "^3.19.0",
+        "zod": "^4.3.6"
+    },
+    "devDependencies": {
+        "@types/cors": "^2.8.19",
+        "@types/express": "^4.17.25",
+        "@types/node": "^20.19.35",
+        "prisma": "^5.22.0",
+        "ts-node-dev": "^2.0.0",
+        "typescript": "^5.9.3"
+    },
+    "prisma": {
+        "schema": "src/prisma/schema.prisma"
+    }
+}

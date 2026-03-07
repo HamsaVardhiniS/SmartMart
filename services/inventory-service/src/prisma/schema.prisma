@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum movement_type_enum {
+  SALE
+  REFUND
+  PURCHASE
+  ADJUSTMENT
+}
+
+model ProductCategory {
+  category_id   Int      @id @default(autoincrement())
+  category_name String   @unique
+
+  subcategories ProductSubcategory[]
+  products      Product[]
+
+  @@map("product_categories")
+}
+
+model ProductSubcategory {
+  subcategory_id   Int @id @default(autoincrement())
+  category_id      Int
+  subcategory_name String
+
+  category ProductCategory @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([category_id, subcategory_name])
+
+  @@map("product_subcategories")
+}
+
+model Brand {
+  brand_id   Int    @id @default(autoincrement())
+  brand_name String @unique
+
+  products Product[]
+
+  @@map("brands")
+}
+
+model Product {
+  product_id Int @id @default(autoincrement())
+
+  sku          String  @unique
+  barcode      String? @unique
+  product_name String
+
+  brand_id       Int?
+  category_id    Int?
+  subcategory_id Int?
+
+  unit String?
+
+  reorder_level Int @default(10)
+
+  tax_percentage Decimal?
+
+  last_sold_date DateTime?
+
+  is_active Boolean @default(true)
+
+  brand       Brand?              @relation(fields: [brand_id], references: [brand_id])
+  category    ProductCategory?    @relation(fields: [category_id], references: [category_id])
+  subcategory ProductSubcategory? @relation(fields: [subcategory_id], references: [subcategory_id])
+
+  batches InventoryBatch[]
+  movements StockMovement[]
+
+  @@map("products")
+}
+
+model InventoryBatch {
+  batch_id BigInt @id @default(autoincrement())
+
+  branch_id  Int
+  product_id Int
+
+  supplier_id Int?
+
+  quantity Int
+
+  expiry_date DateTime?
+
+  cost_per_unit Decimal?
+
+  purchase_rate Decimal?
+
+  mrp Decimal?
+
+  sales_rate Decimal?
+
+  date_received DateTime @default(now())
+
+  product Product @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+
+  movements StockMovement[]
+
+  @@map("inventory_batches")
+}
+
+model StockMovement {
+  movement_id BigInt @id @default(autoincrement())
+
+  branch_id Int
+  product_id Int
+  batch_id BigInt?
+
+  movement_type movement_type_enum
+
+  quantity Int
+
+  reference_id Int?
+
+  movement_date DateTime @default(now())
+
+  product Product @relation(fields:[product_id], references:[product_id])
+  batch   InventoryBatch? @relation(fields:[batch_id], references:[batch_id])
+
+  @@map("stock_movements")
+}
