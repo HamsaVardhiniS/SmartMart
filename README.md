@@ -1,6 +1,6 @@
-# Retail Management System
+# Smart Mart : Retail Management System
 
-A scalable retail management platform that integrates point-of-sale operations, inventory control, procurement, HR management, and analytics into a unified system.
+A scalable retail management platform that integrates point-of-sale operations, inventory control, procurement, HR management, and analytics into a unified platform. This system demonstrates strong integration between operational workflows and analytics, making it suitable for real-world retail business environments.
 
 ## Modules
 
