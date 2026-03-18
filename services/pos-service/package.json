@@ -10,6 +10,7 @@
         "prisma:generate": "prisma generate"
     },
     "dependencies": {
+        "@aws-sdk/client-s3": "^3.1004.0",
         "@prisma/client": "^5.22.0",
         "bcrypt": "^5.1.1",
         "dotenv": "^16.6.1",

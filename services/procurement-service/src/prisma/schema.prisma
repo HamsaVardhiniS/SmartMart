@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum supplier_payment_status_enum {
+  PENDING
+  PARTIAL
+  COMPLETED
+}
+
+enum supplier_order_status_enum {
+  Pending
+  Partially_Received
+  Completed
+  Cancelled
+}
+
+model suppliers {
+  supplier_id      Int      @id @default(autoincrement())
+  supplier_name    String
+  contact_person   String?
+  phone            String?  @unique
+  email            String?  @unique
+  gst_number       String?  @unique
+  status           String?  @default("Active")
+
+  supplier_orders  supplier_orders[]
+  supplier_payments supplier_payments[]
+}
+
+model supplier_orders {
+  order_id               BigInt   @id @default(autoincrement())
+  branch_id              Int
+  supplier_id            Int?
+  total_cost             Decimal? @db.Decimal(12,2)
+  order_date             DateTime @default(now())
+  expected_delivery_date DateTime?
+  status                 supplier_order_status_enum @default(Pending)
+  invoice_number         String?  @unique
+
+  suppliers              suppliers? @relation(fields: [supplier_id], references: [supplier_id])
+  supplier_order_items   supplier_order_items[]
+  supplier_payments      supplier_payments[]
+}
+
+model supplier_order_items {
+  order_item_id      BigInt  @id @default(autoincrement())
+  order_id           BigInt
+  product_id         Int?
+  quantity_supplied  Int
+  quantity_received  Int      @default(0)
+  unit_cost          Decimal? @db.Decimal(12,2)
+  total_cost         Decimal? @db.Decimal(12,2)
+  expiry_date        DateTime?
+
+  supplier_orders    supplier_orders @relation(fields: [order_id], references: [order_id])
+}
+
+model supplier_payments {
+  payment_id      BigInt @id @default(autoincrement())
+  supplier_id     Int?
+  order_id        BigInt?
+  amount          Decimal? @db.Decimal(12,2)
+  payment_date    DateTime @default(now())
+  payment_status  supplier_payment_status_enum @default(PENDING)
+
+  suppliers       suppliers? @relation(fields: [supplier_id], references: [supplier_id])
+  supplier_orders supplier_orders? @relation(fields: [order_id], references: [order_id])
+}
