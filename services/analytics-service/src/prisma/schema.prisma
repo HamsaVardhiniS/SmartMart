@@ -1,0 +1,55 @@
+generator client {
+ provider = "prisma-client-js"
+}
+
+datasource db {
+ provider = "postgresql"
+ url      = env("DATABASE_URL")
+}
+
+model SalesSummaryDaily {
+ summary_date DateTime @id
+ total_revenue Decimal?
+ total_tax Decimal?
+ total_transactions Int?
+
+ @@map("sales_summary_daily")
+}
+
+model ProductSalesSummary {
+ product_id Int
+ branch_id Int
+ total_quantity Int?
+ total_revenue Decimal?
+
+ @@id([product_id,branch_id])
+ @@map("product_sales_summary")
+}
+
+model InventorySummary {
+ product_id Int
+ branch_id Int
+ current_stock Int?
+ stock_value Decimal?
+
+ @@id([product_id,branch_id])
+ @@map("inventory_summary")
+}
+
+model PayrollSummary {
+ payroll_month Int
+ payroll_year Int
+ total_payroll Decimal?
+
+ @@id([payroll_month,payroll_year])
+ @@map("payroll_summary")
+}
+
+model SupplierSummary {
+ supplier_id Int
+ branch_id Int
+ total_purchase_value Decimal?
+
+ @@id([supplier_id,branch_id])
+ @@map("supplier_summary")
+}
