@@ -28,4 +28,12 @@ router.patch("/customers/:id", controller.updateCustomer);
 router.get("/customers/:id/history", controller.customerHistory);
 router.post("/customers/feedback", controller.addFeedback);
 router.get("/customers/:id/summary", controller.customerSummary);
+
+/* ANALYTICS */
+
+router.get("/analytics/daily-revenue", controller.dailyRevenue);
+router.get("/analytics/payment-breakdown", controller.paymentBreakdown);
+router.get("/analytics/top-products", controller.topProducts);
+
 export default router;
+

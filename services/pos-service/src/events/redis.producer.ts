@@ -1,9 +1,23 @@
 import redis from "../config/redis";
 
-export const publishSaleEvent = async (data: any) => {
-  await redis.publish("sale_completed", JSON.stringify(data));
+export const publishSaleEvent = async (event: any) => {
+
+  const safeEvent = JSON.parse(
+    JSON.stringify(event, (_, value) =>
+      typeof value === "bigint" ? Number(value) : value
+    )
+  );
+
+  await redis.publish("sales", JSON.stringify(safeEvent));
 };
 
-export const publishRefundEvent = async (data: any) => {
-  await redis.publish("sale_refunded", JSON.stringify(data));
+export const publishRefundEvent = async (event: any) => {
+
+  const safeEvent = JSON.parse(
+    JSON.stringify(event, (_, value) =>
+      typeof value === "bigint" ? Number(value) : value
+    )
+  );
+
+  await redis.publish("refunds", JSON.stringify(safeEvent));
 };

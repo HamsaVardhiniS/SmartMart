@@ -72,12 +72,12 @@ model customer_feedback {
 model sales_transactions {
   transaction_id     BigInt                   @id @default(autoincrement())
   branch_id          Int
-  invoice_number String @default(dbgenerated())
+  invoice_number String @default(dbgenerated("('INV-'::text || nextval('invoice_sequence'))"))
   customer_id        Int?
   total_amount       Decimal
   other_discount     Decimal                  @default(0)
   tax_amount         Decimal                  @default(0)
-  net_amount         Decimal
+  net_amount Decimal @default(dbgenerated())
   transaction_status transaction_status_enum  @default(COMPLETED)
   transaction_date   DateTime                 @default(now())
   processed_by       Int
@@ -100,8 +100,7 @@ model sales_items {
   quantity_sold  Int
   selling_price  Decimal
   discount       Decimal @default(0)
-  total_price    Decimal
-
+  total_price Decimal @default(dbgenerated())
   sales_transactions sales_transactions @relation(fields: [transaction_id], references: [transaction_id])
 }
 
@@ -146,4 +145,13 @@ model invoice_documents {
   uploaded_at    DateTime @default(now())
 
   sales_transactions sales_transactions @relation(fields: [transaction_id], references: [transaction_id])
+}
+
+model customer_lifetime_summary {
+  branch_id Int
+  customer_id Int
+  total_transactions Int
+  total_spent Decimal
+
+  @@id([branch_id, customer_id])
 }

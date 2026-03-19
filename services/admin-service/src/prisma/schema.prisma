@@ -1,0 +1,89 @@
+generator client {
+ provider = "prisma-client-js"
+}
+
+datasource db {
+ provider = "postgresql"
+ url      = env("DATABASE_URL")
+}
+
+model Role {
+ role_id Int @id @default(autoincrement())
+ role_name String @unique
+ permissions RolePermission[]
+
+ @@map("roles")
+}
+
+model Permission {
+ permission_id Int @id @default(autoincrement())
+ permission_name String @unique
+ roles RolePermission[]
+
+ @@map("permissions")
+}
+
+model RolePermission {
+ role_id Int
+ permission_id Int
+
+ role Role @relation(fields:[role_id],references:[role_id],onDelete: Cascade)
+ permission Permission @relation(fields:[permission_id],references:[permission_id],onDelete: Cascade)
+
+ @@id([role_id,permission_id])
+
+ @@map("role_permissions")
+}
+
+model AdminUser {
+ user_id Int @id @default(autoincrement())
+ employee_id Int?
+ username String @unique
+ password_hash String
+ role_id Int?
+ role Role? @relation(fields:[role_id],references:[role_id])
+ is_active Boolean @default(true)
+ created_at DateTime @default(now())
+
+ @@map("admin_users")
+}
+
+model AuditLog {
+ log_id BigInt @id @default(autoincrement())
+ user_id Int?
+ action String?
+ module String?
+ ip_address String?
+ metadata Json?
+ timestamp DateTime @default(now())
+
+ @@map("audit_logs")
+}
+
+model SystemConfig {
+ config_id Int @id @default(autoincrement())
+ config_key String @unique
+ config_value String
+
+ @@map("system_config")
+}
+
+model FeatureFlag {
+ flag_id Int @id @default(autoincrement())
+ feature_name String @unique
+ is_enabled Boolean @default(true)
+
+ @@map("feature_flags")
+}
+
+model ApprovalRequest {
+ request_id BigInt @id @default(autoincrement())
+ requested_by Int?
+ action_type String
+ status String @default("PENDING")
+ approved_by Int?
+ request_data Json?
+ created_at DateTime @default(now())
+
+ @@map("approval_requests")
+}
