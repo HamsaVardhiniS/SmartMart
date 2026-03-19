@@ -9,5 +9,7 @@ const PORT = process.env.PORT || 4007;
 startConsumer();
 
 app.listen(PORT,()=>{
- console.log(`Analytics Service running on ${PORT}`);
+console.log(`Analytics Service running on ${PORT}`);
 });
+
+console.log("Ok");
