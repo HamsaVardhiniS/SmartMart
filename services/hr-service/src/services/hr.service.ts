@@ -1,7 +1,6 @@
 import prisma from "../config/db";
 import bcrypt from "bcrypt";
 
-/* ================= EMPLOYEE ================= */
 export const createEmployee = async (data: any) => {
   if (!data.password) {
     throw new Error("Password is required");
@@ -9,7 +8,6 @@ export const createEmployee = async (data: any) => {
 
   const hash = await bcrypt.hash(data.password, 10);
 
-  // ✅ REMOVE password before saving
   const { password, ...rest } = data;
 
   const emp = await prisma.employees.create({
@@ -19,7 +17,6 @@ export const createEmployee = async (data: any) => {
     },
   });
 
-  // ✅ Initialize leave balance
   await prisma.leave_balance.create({
     data: {
       employee_id: emp.employee_id,
@@ -53,13 +50,12 @@ export const updateEmployeeStatus = async (id: number, status: any) => {
   });
 };
 
-/* ================= DEPARTMENT ================= */
 export const getDepartments = async () => {
   return prisma.departments.findMany({
     include: {
-      manager: true,     // optional (gives manager details)
-      employees: true    // optional (all employees in dept)
-    }
+      manager: true,
+      employees: true,
+    },
   });
 };
 
@@ -81,15 +77,31 @@ export const assignManager = async (deptId: number, managerId: number) => {
   });
 };
 
-/* ================= ATTENDANCE ================= */
-
-const getToday = () => new Date(new Date().toISOString().split("T")[0]);
+const getToday = () => {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
 
 export const checkIn = async (employee_id: number) => {
+
+  const today = getToday();
+
+  const existing = await prisma.attendance.findFirst({
+    where: {
+      employee_id,
+      attendance_date: today
+    }
+  });
+
+  if (existing) {
+    throw new Error("Already checked in today");
+  }
+
   return prisma.attendance.create({
     data: {
       employee_id,
-      attendance_date: getToday(),
+      attendance_date: today,
       check_in_time: new Date(),
     },
   });
@@ -107,9 +119,11 @@ export const checkOut = async (employee_id: number) => {
 
   const out = new Date();
 
-  const hours =
+  let hours =
     (out.getTime() - new Date(record.check_in_time!).getTime()) /
     (1000 * 60 * 60);
+
+  hours = Math.max(0, Math.min(24, Number(hours.toFixed(2))));
 
   return prisma.attendance.update({
     where: { attendance_id: record.attendance_id },
@@ -128,10 +142,14 @@ export const getAttendance = async (employee_id: number) => {
   });
 };
 
-/* ================= LEAVE ================= */
-
 export const applyLeave = async (data: any) => {
-  return prisma.leave_requests.create({ data });
+  return prisma.leave_requests.create({
+    data: {
+      ...data,
+      start_date: new Date(data.start_date),
+      end_date: new Date(data.end_date)
+    }
+  });
 };
 
 export const updateLeaveStatus = async (id: number, status: any) => {
@@ -140,7 +158,6 @@ export const updateLeaveStatus = async (id: number, status: any) => {
     data: { status },
   });
 
-  // AUTO leave deduction
   if (status === "Approved") {
     const days =
       (new Date(leave.end_date).getTime() -
@@ -171,8 +188,6 @@ export const getLeaves = async (employee_id: number) => {
     orderBy: { leave_id: "desc" },
   });
 };
-
-/* ================= PAYROLL ================= */
 
 export const generatePayroll = async (data: any) => {
   const emp = await prisma.employees.findUnique({
@@ -207,8 +222,6 @@ export const getPayrollHistory = async (employee_id: number) => {
   });
 };
 
-/* ================= PAYSLIP ================= */
-
 export const generatePayslip = async (payroll_id: number) => {
   const payroll = await prisma.payroll.findUnique({
     where: { payroll_id },
@@ -224,11 +237,13 @@ export const generatePayslip = async (payroll_id: number) => {
     base: payroll.base_salary,
     deduction: payroll.leave_deduction,
     bonus: payroll.bonus,
-    net: payroll.net_salary,
+    net:
+      Number(payroll.base_salary) -
+      Number(payroll.leave_deduction || 0) +
+      Number(payroll.bonus || 0),
   };
 };
 
-/* ================= PASSWORD RESET ================= */
 
 export const createResetToken = async (data: any) => {
   return prisma.password_resets.create({ data });

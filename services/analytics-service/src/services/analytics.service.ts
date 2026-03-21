@@ -1,23 +1,25 @@
 import prisma from "../config/db";
 
 /* SALES */
+export const updateSalesSummary = async (data: any) => {
 
-export const updateSalesSummary = async(data:any)=>{
+  const date = new Date(data.date);
+  date.setHours(0, 0, 0, 0);
 
- return prisma.salesSummaryDaily.upsert({
-  where:{summary_date:new Date(data.date)},
-  update:{
-   total_revenue:{increment:data.revenue},
-   total_tax:{increment:data.tax},
-   total_transactions:{increment:1}
-  },
-  create:{
-   summary_date:new Date(data.date),
-   total_revenue:data.revenue,
-   total_tax:data.tax,
-   total_transactions:1
-  }
- });
+  return prisma.salesSummaryDaily.upsert({
+    where: { summary_date: date },
+    update: {
+      total_revenue: { increment: data.revenue },
+      total_tax: { increment: data.tax },
+      total_transactions: { increment: 1 }
+    },
+    create: {
+      summary_date: date,
+      total_revenue: data.revenue,
+      total_tax: data.tax,
+      total_transactions: 1
+    }
+  });
 };
 
 /* PRODUCT */

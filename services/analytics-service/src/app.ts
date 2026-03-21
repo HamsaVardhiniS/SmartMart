@@ -11,8 +11,8 @@ app.use(express.json());
 
 app.use("/analytics",routes);
 
-app.get("/health",(req,res)=>{
- res.json({status:"analytics running"});
+app.get("/health", (req, res) => {
+  return res.json({ status: "analytics running" });
 });
 
 app.use(errorHandler);

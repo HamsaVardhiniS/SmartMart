@@ -1,83 +1,74 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import * as service from "../services/pos.service";
 import { serializeBigInt } from "../utils/bigint.serializer";
+
+const handle =
+  (fn: (req: Request) => Promise<any>) =>
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await fn(req);
+      res.json(serializeBigInt(result));
+    } catch (err) {
+      next(err);
+    }
+  };
+
 /* SALES */
 
-export const createSale = async (req: Request, res: Response) => {
-  const data = await service.createSale(req.body);
-  res.json(serializeBigInt(data));
-};
+export const createSale = handle((req: Request) =>
+  service.createSale(req.body)
+);
 
-export const getSale = async (req: Request, res: Response) => {
-  const sale = await service.getSale(Number(req.params.id));
-  res.json(serializeBigInt(sale));
-};
+export const getSale = handle((req: Request) =>
+  service.getSale(Number(req.params.id))
+);
 
-export const cancelSale = async (req: Request, res: Response) => {
-  const sale = await service.cancelSale(Number(req.params.id));
-  res.json(serializeBigInt(sale));
-};
+export const cancelSale = handle((req: Request) =>
+  service.cancelSale(Number(req.params.id))
+);
 
 /* PAYMENTS */
 
-export const addPayment = async (req: Request, res: Response) => {
-  const payment = await service.addPayment(req.body);
-  res.json(serializeBigInt(payment));
-};
+export const addPayment = handle((req: Request) =>
+  service.addPayment(req.body)
+);
 
 /* REFUND */
 
-export const processRefund = async (req: Request, res: Response) => {
-  const refund = await service.processRefund(req.body);
-  res.json(serializeBigInt(refund));
-};
+export const processRefund = handle((req: Request) =>
+  service.processRefund(req.body)
+);
 
 /* CUSTOMERS */
 
-export const createCustomer = async (req: Request, res: Response) => {
-  const customer = await service.createCustomer(req.body);
-  res.json(customer);
-};
+export const createCustomer = handle((req: Request) =>
+  service.createCustomer(req.body)
+);
 
-export const getCustomer = async (req: Request, res: Response) => {
-  const customer = await service.getCustomer(Number(req.params.id));
-  res.json(customer);
-};
+export const getCustomer = handle((req: Request) =>
+  service.getCustomer(Number(req.params.id))
+);
 
-export const updateCustomer = async (req: Request, res: Response) => {
-  const customer = await service.updateCustomer(
-    Number(req.params.id),
-    req.body
-  );
-  res.json(customer);
-};
+export const updateCustomer = handle((req: Request) =>
+  service.updateCustomer(Number(req.params.id), req.body)
+);
 
-export const customerSummary = async (req: Request, res: Response) => {
-  const data = await service.customerLifetimeSummary(Number(req.params.id));
-  res.json(data);
-};
+export const customerSummary = handle((req: Request) =>
+  service.customerLifetimeSummary(Number(req.params.id))
+);
 
-export const addFeedback = async (req: Request, res: Response) => {
-  const feedback = await service.addFeedback(req.body);
-  res.json(feedback);
-};
+export const addFeedback = handle((req: Request) =>
+  service.addFeedback(req.body)
+);
 
-export const customerHistory = async (req: Request, res: Response) => {
-  const history = await service.customerHistory(Number(req.params.id));
-  res.json(serializeBigInt(history));
-};
+export const customerHistory = handle((req: Request) =>
+  service.customerHistory(Number(req.params.id))
+);
 
-export const dailyRevenue = async (req: Request, res: Response) => {
-  const data = await service.dailyRevenue();
-  res.json(data);
-};
+/* ANALYTICS */
 
-export const paymentBreakdown = async (req: Request, res: Response) => {
-  const data = await service.paymentBreakdown();
-  res.json(data);
-};
+export const dailyRevenue = handle(() => service.dailyRevenue());
 
-export const topProducts = async (req: Request, res: Response) => {
-  const data = await service.topProducts();
-  res.json(data);
-};
+export const paymentBreakdown = handle(() => service.paymentBreakdown());
+
+export const topProducts = handle(() => service.topProducts());

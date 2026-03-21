@@ -4,5 +4,9 @@
     "workspaces": [
         "apps/*",
         "packages/*"
-    ]
+    ],
+    "dependencies": {
+        "tsconfig-paths": "^4.2.0",
+        "uuid": "^13.0.0"
+    }
 }

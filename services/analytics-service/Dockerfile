@@ -1,4 +1,5 @@
-FROM node:20
+# ----------- BUILD STAGE -----------
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -9,6 +10,19 @@ COPY . .
 
 RUN npm run build
 
-EXPOSE 4007
 
-CMD ["npm","start"]
+# ----------- PRODUCTION STAGE -----------
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install --omit=dev
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/src/prisma ./src/prisma
+
+EXPOSE 4002
+
+CMD ["node", "dist/server.js"]

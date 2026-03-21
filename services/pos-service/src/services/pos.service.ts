@@ -1,5 +1,5 @@
 import prisma from "../config/db";
-import { publishSaleEvent, publishRefundEvent } from "../events/redis.producer";
+import { publishSaleEvent, publishRefundEvent } from "../events/redis.publisher";
 import { calculateTax } from "../utils/tax.calculator";
 import { generateInvoice } from "../utils/invoice.generator";
 import { uploadInvoice } from "../utils/s3.uploader";
@@ -7,25 +7,21 @@ import { uploadInvoice } from "../utils/s3.uploader";
 /* CREATE SALE */
 
 export const createSale = async (data: any) => {
-
   if (!data.items || data.items.length === 0) {
     throw new Error("Sale must contain at least one item");
   }
 
   return prisma.$transaction(async (tx) => {
-
     let totalAmount = 0;
     let totalTax = 0;
 
     const items: any[] = [];
 
     for (const item of data.items) {
-
       const tax = calculateTax(item.price, item.tax_percentage || 0);
 
       totalTax += tax * item.quantity;
-
-      totalAmount += (item.price * item.quantity) - (item.discount || 0);
+      totalAmount += item.price * item.quantity - (item.discount || 0);
 
       items.push({
         product_id: item.product_id,
@@ -34,37 +30,32 @@ export const createSale = async (data: any) => {
         selling_price: item.price,
         discount: item.discount || 0
       });
-
     }
 
     const sale = await tx.sales_transactions.create({
-    data: {
-      branch_id: Number(data.branch_id),
-      customer_id: data.customer_id ? Number(data.customer_id) : null,
-      total_amount: totalAmount,
-      other_discount: data.other_discount || 0,
-      tax_amount: totalTax,
-      processed_by: Number(data.processed_by)
-    } as any
-  });
+      data: {
+        branch_id: Number(data.branch_id),
+        customer_id: data.customer_id ? Number(data.customer_id) : null,
+        total_amount: totalAmount,
+        other_discount: data.other_discount || 0,
+        tax_amount: totalTax,
+        processed_by: Number(data.processed_by)
+      } as any
+    });
 
     for (const item of items) {
-
       await tx.sales_items.create({
         data: {
           transaction_id: sale.transaction_id,
           ...item
         }
       });
-
     }
 
-    if (data.payments && data.payments.length > 0) {
-
+    if (data.payments?.length) {
       let paymentTotal = 0;
 
       for (const payment of data.payments) {
-
         paymentTotal += payment.amount;
 
         await tx.payments.create({
@@ -75,52 +66,46 @@ export const createSale = async (data: any) => {
             payment_reference: payment.reference
           }
         });
-
       }
 
-      if (Number(paymentTotal) !== Number(sale.net_amount)) {
-        throw new Error("Payment total does not match invoice amount");
+      if (Math.abs(paymentTotal - Number(sale.net_amount)) > 0.01) {
+        throw new Error("Payment total mismatch");
       }
 
       await tx.sales_transactions.update({
         where: { transaction_id: sale.transaction_id },
         data: { payment_verified: true }
       });
-
     }
 
     await publishSaleEvent({
       transaction_id: sale.transaction_id,
+      branch_id: sale.branch_id,
+      total_amount: sale.total_amount,
       items: data.items
     });
 
     const invoice = generateInvoice(sale, items);
-/* Upload invoice to S3 only if AWS is configured */
 
-if (process.env.AWS_REGION && process.env.S3_BUCKET) {
+    if (process.env.AWS_REGION && process.env.S3_BUCKET) {
+      const fileUrl = await uploadInvoice(invoice, Number(sale.transaction_id));
 
-  const fileUrl = await uploadInvoice(invoice, Number(sale.transaction_id));
-
-  await tx.invoice_documents.create({
-    data: {
-      transaction_id: sale.transaction_id,
-      file_url: fileUrl
+      await tx.invoice_documents.create({
+        data: {
+          transaction_id: sale.transaction_id,
+          file_url: fileUrl
+        }
+      });
     }
+
+    return { sale, invoice };
   });
-
-}
-
-return { sale, invoice };
-
-});
-
 };
 
 /* GET SALE */
 
 export const getSale = async (id: number) => {
-
-  return prisma.sales_transactions.findUnique({
+  const sale = await prisma.sales_transactions.findUnique({
     where: { transaction_id: id },
     include: {
       sales_items: true,
@@ -129,20 +114,19 @@ export const getSale = async (id: number) => {
     }
   });
 
-};
+  if (!sale) throw new Error("Sale not found");
 
+  return sale;
+};
 
 /* CANCEL SALE */
 
 export const cancelSale = async (id: number) => {
-
   const existingSale = await prisma.sales_transactions.findUnique({
     where: { transaction_id: id }
   });
 
-  if (!existingSale) {
-    throw new Error("Sale not found");
-  }
+  if (!existingSale) throw new Error("Sale not found");
 
   if (existingSale.transaction_status !== "COMPLETED") {
     throw new Error("Only completed sales can be cancelled");
@@ -159,24 +143,19 @@ export const cancelSale = async (id: number) => {
   });
 
   return sale;
-
 };
-
 
 /* ADD PAYMENT */
 
 export const addPayment = async (data: any) => {
-
   const sale = await prisma.sales_transactions.findUnique({
     where: { transaction_id: data.transaction_id }
   });
 
-  if (!sale) {
-    throw new Error("Sale not found");
-  }
+  if (!sale) throw new Error("Sale not found");
 
   if (sale.transaction_status !== "COMPLETED") {
-    throw new Error("Payment not allowed for this transaction");
+    throw new Error("Payment not allowed");
   }
 
   const payment = await prisma.payments.create({
@@ -193,25 +172,22 @@ export const addPayment = async (data: any) => {
     _sum: { amount: true }
   });
 
-  if (Number(payments._sum.amount) === Number(sale.net_amount)) {
-
+  if (
+    Math.abs(Number(payments._sum.amount) - Number(sale.net_amount)) <= 0.01
+  ) {
     await prisma.sales_transactions.update({
       where: { transaction_id: data.transaction_id },
       data: { payment_verified: true }
     });
-
   }
 
   return payment;
-
 };
 
 /* REFUND */
 
 export const processRefund = async (data: any) => {
-
-  return await prisma.$transaction(async (tx) => {
-
+  return prisma.$transaction(async (tx) => {
     const refund = await tx.refund_transactions.create({
       data: {
         original_transaction_id: data.transaction_id,
@@ -221,7 +197,6 @@ export const processRefund = async (data: any) => {
     });
 
     for (const item of data.items) {
-
       await tx.refund_items.create({
         data: {
           refund_id: refund.refund_id,
@@ -231,7 +206,6 @@ export const processRefund = async (data: any) => {
           refund_amount: item.amount
         }
       });
-
     }
 
     await publishRefundEvent({
@@ -240,11 +214,8 @@ export const processRefund = async (data: any) => {
     });
 
     return refund;
-
   });
-
 };
-
 
 /* CUSTOMERS */
 
@@ -252,18 +223,21 @@ export const createCustomer = async (data: any) => {
   try {
     return await prisma.customers.create({ data });
   } catch (error: any) {
-
     if (error.code === "P2002") {
-      throw new Error("Customer with this phone or email already exists");
+      throw new Error("Customer already exists");
     }
-
     throw error;
   }
 };
+
 export const getCustomer = async (id: number) => {
-  return prisma.customers.findUnique({
+  const customer = await prisma.customers.findUnique({
     where: { customer_id: id }
   });
+
+  if (!customer) throw new Error("Customer not found");
+
+  return customer;
 };
 
 export const updateCustomer = async (id: number, data: any) => {
@@ -273,11 +247,9 @@ export const updateCustomer = async (id: number, data: any) => {
   });
 };
 
-
 /* CUSTOMER HISTORY */
 
 export const customerHistory = async (id: number) => {
-
   return prisma.sales_transactions.findMany({
     where: { customer_id: id },
     include: {
@@ -287,65 +259,58 @@ export const customerHistory = async (id: number) => {
       transaction_date: "desc"
     }
   });
-
 };
-
 
 /* CUSTOMER LIFETIME SUMMARY */
 
 export const customerLifetimeSummary = async (id: number) => {
-
   return prisma.customer_lifetime_summary.findMany({
     where: {
       customer_id: id
     }
   });
-
 };
-
 
 /* CUSTOMER FEEDBACK */
 
 export const addFeedback = async (data: any) => {
-
   return prisma.customer_feedback.create({
     data
   });
-
 };
-
 
 /* DAILY REVENUE */
 
 export const dailyRevenue = async () => {
-
   return prisma.sales_transactions.aggregate({
-    where: { transaction_status: "COMPLETED" },
-    _sum: { net_amount: true }
+    where: {
+      transaction_status: "COMPLETED"
+    },
+    _sum: {
+      net_amount: true
+    }
   });
-
 };
-
 
 /* PAYMENT METHOD BREAKDOWN */
 
 export const paymentBreakdown = async () => {
-
   return prisma.payments.groupBy({
     by: ["payment_method"],
-    _sum: { amount: true }
+    _sum: {
+      amount: true
+    }
   });
-
 };
-
 
 /* TOP SELLING PRODUCTS */
 
 export const topProducts = async () => {
-
   return prisma.sales_items.groupBy({
     by: ["product_id"],
-    _sum: { quantity_sold: true },
+    _sum: {
+      quantity_sold: true
+    },
     orderBy: {
       _sum: {
         quantity_sold: "desc"
@@ -353,5 +318,4 @@ export const topProducts = async () => {
     },
     take: 10
   });
-
 };

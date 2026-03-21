@@ -16,7 +16,7 @@ app.use(express.json());
 app.use("/hr", hrRoutes);
 
 app.get("/health",(req,res)=>{
- res.json({status:"HR service running"});
+ return res.json({status:"HR service running"});
 });
 
 app.use(errorHandler);

@@ -111,7 +111,7 @@ export const adjustStock = async(data:any)=>{
  return prisma.stockMovement.create({
   data:{
    ...data,
-   movement_type:"ADJUSTMENT"
+   movement_type: data.movement_type || "ADJUSTMENT"
   }
  });
 };

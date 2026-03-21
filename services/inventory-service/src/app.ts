@@ -14,7 +14,7 @@ app.use(express.json());
 app.use("/inventory", inventoryRoutes);
 
 app.get("/health",(req,res)=>{
- res.json({status:"inventory service running"});
+ return res.json({status:"inventory service running"});
 });
 
 app.use(errorHandler);

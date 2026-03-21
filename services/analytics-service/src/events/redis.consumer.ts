@@ -1,48 +1,52 @@
 import redis from "../config/redis";
 import * as service from "../services/analytics.service";
+import { logger } from "../config/logger";
 
-export const startConsumer = ()=>{
+export const startConsumer = () => {
 
- const sub = redis.duplicate();
+  const sub = redis.duplicate();
 
- sub.subscribe("sale.completed");
- sub.subscribe("inventory.updated");
- sub.subscribe("payroll.generated");
- sub.subscribe("supplier.payment");
+  sub.subscribe("sale.completed");
+  sub.subscribe("inventory.updated");
+  sub.subscribe("payroll.generated");
+  sub.subscribe("supplier.payment");
 
- sub.on("message",async(channel,message)=>{
+  sub.on("message", async (channel, message) => {
+    try {
+      const data = JSON.parse(message);
 
-  const data = JSON.parse(message);
+      if (channel === "sale.completed") {
 
-  if(channel==="sale.completed"){
+        await service.updateSalesSummary({
+          date: new Date(),
+          revenue: data.net_amount,
+          tax: data.tax_amount
+        });
 
-   await service.updateSalesSummary({
-    date:new Date(),
-    revenue:data.net_amount,
-    tax:data.tax_amount
-   });
+        for (const item of data.items || []) {
+          await service.updateProductSales({
+            product_id: item.product_id,
+            branch_id: data.branch_id,
+            quantity: item.quantity,
+            revenue: item.total_price
+          });
+        }
+      }
 
-   for(const item of data.items){
-    await service.updateProductSales({
-     product_id:item.product_id,
-     branch_id:data.branch_id,
-     quantity:item.quantity,
-     revenue:item.total_price
-    });
-   }
-  }
+      if (channel === "inventory.updated") {
+        await service.updateInventory(data);
+      }
 
-  if(channel==="inventory.updated"){
-   await service.updateInventory(data);
-  }
+      if (channel === "payroll.generated") {
+        await service.updatePayroll(data);
+      }
 
-  if(channel==="payroll.generated"){
-   await service.updatePayroll(data);
-  }
+      if (channel === "supplier.payment") {
+        await service.updateSupplier(data);
+      }
 
-  if(channel==="supplier.payment"){
-   await service.updateSupplier(data);
-  }
-
- });
+    } catch (err: any) {
+      logger.error(`Consumer error: ${err.message}`);
+    }
+  });
 };

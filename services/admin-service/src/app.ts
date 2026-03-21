@@ -11,8 +11,8 @@ app.use(express.json());
 
 app.use("/admin",routes);
 
-app.get("/health",(req,res)=>{
- res.json({status:"admin running"});
+app.get("/health", (req, res) => {
+  return res.json({ status: "admin running" });
 });
 
 app.use(errorHandler);

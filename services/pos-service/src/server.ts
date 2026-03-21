@@ -1,19 +1,41 @@
 import dotenv from "dotenv";
-import app from "./app";
-import { connectRedis } from "./config/redis";
-
 dotenv.config();
 
-const PORT = process.env.PORT || 4002;
+import app from "./app";
+import { startConsumer } from "./events/redis.consumer";
+import { logger } from "./config/logger";
 
-const start = async () => {
+const PORT = process.env.PORT || 4000;
+const SERVICE_NAME = process.env.SERVICE_NAME || "pos-service";
 
-  await connectRedis();
+const startServer = async () => {
+  try {
+    /* 1. Start Redis Consumer FIRST */
+    await startConsumer();
 
-  app.listen(PORT, () => {
-    console.log(`POS Service running on port ${PORT}`);
-  });
+    logger.info("Redis consumer started");
 
+    /* 2. Start HTTP Server */
+    app.listen(PORT, () => {
+      logger.info(`${SERVICE_NAME} running on port ${PORT}`);
+    });
+
+  } catch (error: any) {
+    logger.error(`Failed to start ${SERVICE_NAME}: ${error.message}`);
+    process.exit(1);
+  }
 };
 
-start();
+startServer();
+
+/* Graceful shutdown */
+
+process.on("SIGINT", () => {
+  logger.info(`${SERVICE_NAME} shutting down...`);
+  process.exit(0);
+});
+
+process.on("SIGTERM", () => {
+  logger.info(`${SERVICE_NAME} terminated`);
+  process.exit(0);
+});

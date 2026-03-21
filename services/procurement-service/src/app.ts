@@ -4,6 +4,7 @@ import morgan from "morgan";
 
 import supplierRoutes from "./routes/supplier.routes";
 import purchaseRoutes from "./routes/purchase.routes";
+import { errorHandler } from "./middleware/error.middleware";
 
 const app = express();
 
@@ -28,5 +29,6 @@ app.use((req, res, next) => {
 
 app.use("/suppliers", supplierRoutes);
 app.use("/procurement", purchaseRoutes);
+app.use(errorHandler);
 
 export default app;
