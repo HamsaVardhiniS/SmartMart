@@ -82,7 +82,7 @@ export const addOrderItems = async (
           product_id: item.product_id,
           quantity_supplied: item.quantity_supplied,
           unit_cost: new Prisma.Decimal(item.unit_cost),
-          total_cost: totalCost,
+          // ❌ REMOVED total_cost (DB GENERATED COLUMN)
           expiry_date: item.expiry_date
             ? new Date(item.expiry_date)
             : undefined
@@ -92,7 +92,6 @@ export const addOrderItems = async (
       createdItems.push(created);
     }
 
-    /* Update order total */
     await tx.supplier_orders.update({
       where: { order_id: orderId },
       data: {
@@ -135,7 +134,6 @@ export const receiveGoods = async (
       }
     });
 
-    /* -------- ORDER STATUS UPDATE -------- */
     const allItems = await tx.supplier_order_items.findMany({
       where: { order_id: item.order_id }
     });
@@ -158,7 +156,6 @@ export const receiveGoods = async (
       data: { status }
     });
 
-    /* EVENT → Inventory */
     await publishStockReceived(updatedItem);
 
     return updatedItem;
