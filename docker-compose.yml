@@ -1,61 +1,132 @@
+version: "3.9"
+
 services:
 
+  # -------------------------
+  # API SERVICES
+  # -------------------------
+  pos-service:
+    build: ./services/pos-service
+    ports:
+      - "4001:4001"
+    env_file: .env
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - retail-net
+
+  hr-service:
+    build: ./services/hr-service
+    ports:
+      - "4002:4002"
+    env_file: .env
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - retail-net
+
+  inventory-service:
+    build: ./services/inventory-service
+    ports:
+      - "4003:4003"
+    env_file: .env
+    networks:
+      - retail-net
+
+  procurement-service:
+    build: ./services/procurement-service
+    ports:
+      - "4004:4004"
+    env_file: .env
+    networks:
+      - retail-net
+
+  admin-service:
+    build: ./services/admin-service
+    ports:
+      - "4005:4005"
+    env_file: .env
+    networks:
+      - retail-net
+
+  analytics-service:
+    build: ./services/analytics-service
+    ports:
+      - "4006:4006"
+    env_file: .env
+    networks:
+      - retail-net
+
+  # -------------------------
+  # DATABASE
+  # -------------------------
   postgres:
     image: postgres:15
-    container_name: postgres
-    restart: unless-stopped
+    container_name: retail-postgres
+    restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-    ports:
-      - "5433:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/sql:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - retail-net
 
+  # -------------------------
+  # REDIS
+  # -------------------------
   redis:
     image: redis:7
-    container_name: redis
-    restart: unless-stopped
-    volumes:
-      - ./infrastructure/redis/redis.conf:/usr/local/etc/redis/redis.conf
-    command: redis-server /usr/local/etc/redis/redis.conf
+    container_name: retail-redis
     ports:
       - "6379:6379"
+    volumes:
+      - ./infrastructure/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - retail-net
 
+  # -------------------------
+  # NGINX API GATEWAY
+  # -------------------------
   nginx:
     image: nginx:latest
-    container_name: nginx
-    restart: unless-stopped
-    volumes:
-      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf
+    container_name: retail-nginx
     ports:
       - "80:80"
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - pos-service
+      - hr-service
+    networks:
+      - retail-net
 
+  # -------------------------
+  # PROMETHEUS
+  # -------------------------
   prometheus:
     image: prom/prometheus
-    container_name: prometheus
-    restart: unless-stopped
     volumes:
       - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
+    networks:
+      - retail-net
 
+  # -------------------------
+  # GRAFANA
+  # -------------------------
   grafana:
     image: grafana/grafana
-    container_name: grafana
-    restart: unless-stopped
     ports:
       - "3000:3000"
+    networks:
+      - retail-net
 
-  jenkins:
-    build: ./infrastructure/jenkins
-    container_name: jenkins
-    restart: unless-stopped
-    ports:
-      - "8080:8080"
-    volumes:
-      - jenkins_home:/var/jenkins_home
-
-volumes:
-  postgres_data:
-  jenkins_home:
+networks:
+  retail-net:
+    driver: bridge
