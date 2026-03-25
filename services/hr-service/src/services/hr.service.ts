@@ -190,30 +190,40 @@ export const getLeaves = async (employee_id: number) => {
 };
 
 export const generatePayroll = async (data: any) => {
-  const emp = await prisma.employees.findUnique({
-    where: { employee_id: data.employee_id },
-  });
 
-  if (!emp) throw new Error("Employee not found");
+    const emp = await prisma.employees.findUnique({
+      where: { employee_id: data.employee_id },
+    });
 
-  const leaveBal = await prisma.leave_balance.findUnique({
-    where: { employee_id: data.employee_id },
-  });
+    if (!emp) throw new Error("Employee not found");
 
-  const deduction =
-    (Number(emp.salary) / 30) * (leaveBal?.used_leaves || 0);
+    const leaveBal = await prisma.leave_balance.findUnique({
+      where: { employee_id: data.employee_id },
+    });
 
-  return prisma.payroll.create({
-    data: {
-      employee_id: data.employee_id,
-      payroll_month: data.month,
-      payroll_year: data.year,
-      base_salary: emp.salary,
-      leave_deduction: deduction,
-      bonus: data.bonus || 0,
-    },
-  });
-};
+    const deduction =
+      (Number(emp.salary) / 30) * (leaveBal?.used_leaves || 0);
+
+    const payroll = await prisma.payroll.create({
+      data: {
+        employee_id: data.employee_id,
+        payroll_month: data.month,
+        payroll_year: data.year,
+        base_salary: emp.salary,
+        leave_deduction: deduction,
+        bonus: data.bonus || 0,
+      },
+    });
+
+    await publishPayroll({
+      employeeId: data.employee_id,
+      month: data.month,
+      year: data.year,
+      amount: Number(emp.salary)
+    });
+
+    return payroll;
+  };
 
 export const getPayrollHistory = async (employee_id: number) => {
   return prisma.payroll.findMany({

@@ -3,6 +3,7 @@ import { publishSaleCreated, publishRefund } from "../events/redis.publisher";
 import { calculateTax } from "../utils/tax.calculator";
 import { generateInvoice } from "../utils/invoice.generator";
 import { uploadInvoice } from "../utils/s3.uploader";
+import { Prisma } from "@prisma/client";
 
 /* CREATE SALE */
 
@@ -11,7 +12,7 @@ export const createSale = async (data: any) => {
     throw new Error("Sale must contain at least one item");
   }
 
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     let totalAmount = 0;
     let totalTax = 0;
 
@@ -195,7 +196,7 @@ export const addPayment = async (data: any) => {
 /* REFUND */
 
 export const processRefund = async (data: any) => {
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const refund = await tx.refund_transactions.create({
       data: {
         original_transaction_id: data.transaction_id,

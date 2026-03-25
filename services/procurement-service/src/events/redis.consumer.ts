@@ -2,12 +2,16 @@ import redis from "../config/redis";
 import prisma from "../config/db";
 
 export const startConsumer = async () => {
+
   const sub = redis.duplicate();
 
   await sub.subscribe("inventory.stock.low");
 
-  sub.on("message", async (_, message) => {
+  sub.on("message", async (channel: string, message: string) => {
+
     const event = JSON.parse(message);
+
+    if (!event?.eventId || !event?.data) return;
 
     const exists = await prisma.event_log.findUnique({
       where: { event_id: event.eventId }
@@ -16,13 +20,23 @@ export const startConsumer = async () => {
     if (exists) return;
 
     try {
-      // trigger reorder logic
+
+      if (channel === "inventory.stock.low") {
+
+        console.log("LOW STOCK ALERT:", {
+          product: event.data.product_id,
+          branch: event.data.branch_id,
+          stock: event.data.stock
+        });
+
+      }
 
       await prisma.event_log.create({
         data:{event_id:event.eventId}
       });
 
     } catch (err:any) {
+
       await prisma.failed_events.create({
         data:{
           event_id:event.eventId,
@@ -30,6 +44,7 @@ export const startConsumer = async () => {
           error:err.message
         }
       });
+
     }
   });
 };

@@ -22,7 +22,13 @@ export const assignPermission = async (role: number, permission: number) => {
     }
   });
 
-  await redis.publish("role.updated", JSON.stringify({ role }));
+  await redis.publish("admin.role.updated", JSON.stringify({
+    eventId: Date.now().toString(),
+    eventType: "admin.role.updated.v1",
+    timestamp: new Date().toISOString(),
+    source: "admin-service",
+    data: { role }
+  }));
 
   return res;
 };
@@ -45,7 +51,13 @@ export const setConfig = async (data: any) => {
     create: data
   });
 
-  await redis.publish("config.updated", JSON.stringify(data));
+  await redis.publish("admin.config.updated", JSON.stringify({
+    eventId: Date.now().toString(),
+    eventType: "admin.config.updated.v1",
+    timestamp: new Date().toISOString(),
+    source: "admin-service",
+    data
+  }));
   return res;
 };
 
@@ -61,7 +73,13 @@ export const toggleFeature = async (data: any) => {
     create: data
   });
 
-  await redis.publish("feature.updated", JSON.stringify(data));
+  await redis.publish("admin.feature.updated", JSON.stringify({
+    eventId: Date.now().toString(),
+    eventType: "admin.feature.updated.v1",
+    timestamp: new Date().toISOString(),
+    source: "admin-service",
+    data
+  }));
   return res;
 };
 
@@ -101,12 +119,24 @@ export const getLogs = async () => {
 
 /* RESET */
 export const resetEmployeePassword = async (employee_id: number) => {
-  await redis.publish("employee.reset.password", JSON.stringify({ employee_id }));
+  await redis.publish("hr.employee.reset_password", JSON.stringify({
+    eventId: Date.now().toString(),
+    eventType: "hr.employee.reset_password.v1",
+    timestamp: new Date().toISOString(),
+    source: "admin-service",
+    data: { employee_id }
+  }));
   logger.info(`Password reset event: ${employee_id}`);
 };
 
 /* DEPARTMENT */
 export const createDepartment = async (data: any) => {
-  await redis.publish("department.create", JSON.stringify(data));
+  await redis.publish("admin.department.created", JSON.stringify({
+    eventId: Date.now().toString(),
+    eventType: "admin.department.created.v1",
+    timestamp: new Date().toISOString(),
+    source: "admin-service",
+    data
+  }));
   logger.info(`Department create event: ${JSON.stringify(data)}`);
 };

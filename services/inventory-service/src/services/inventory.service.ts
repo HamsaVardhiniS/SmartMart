@@ -1,5 +1,6 @@
 import prisma from "../config/db";
 import { logger } from "../config/logger";
+import { Prisma } from "@prisma/client";
 
 /* PRODUCT MANAGEMENT */
 
@@ -80,7 +81,7 @@ export const getSubcategories = async()=>{
 
 export const createBatch = async(data:any)=>{
 
- return prisma.$transaction(async(tx)=>{
+ return prisma.$transaction(async (tx: Prisma.TransactionClient)=>{
 
   const batch = await tx.inventoryBatch.create({data});
 
@@ -127,7 +128,7 @@ export const getStock = async(product:number,branch:number)=>{
   }
  });
 
- const total=batches.reduce((s,b)=>s+b.quantity,0);
+ const total = batches.reduce((sum: number, b: any) => sum + b.quantity, 0);
 
  return{
   product,
@@ -146,15 +147,26 @@ export const processSale = async (
   batch_id: number
 ) => {
 
-  return prisma.inventoryBatch.update({
-    where: {
-      batch_id: batch_id
-    },
-    data: {
-      quantity: {
-        decrement: quantity
+  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+
+    await tx.inventoryBatch.update({
+      where: { batch_id },
+      data: {
+        quantity: { decrement: quantity }
       }
-    }
+    });
+
+    await tx.stockMovement.create({
+      data: {
+        branch_id,
+        product_id,
+        batch_id,
+        movement_type: "SALE",
+        quantity,
+        reference_id
+      }
+    });
+
   });
 
 };

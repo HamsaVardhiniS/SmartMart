@@ -14,10 +14,12 @@ export const startConsumer = async () => {
     "hr.payroll.generated"
   );
 
-  sub.on("message", async (channel, message) => {
+  sub.on("message", async (channel: string, message: string) => {
 
     const event = JSON.parse(message);
-
+    if (!event?.eventId || !event?.data) {
+      return;
+    }
     const exists = await prisma.event_log.findUnique({
       where:{event_id:event.eventId}
     });
@@ -28,7 +30,7 @@ export const startConsumer = async () => {
 
       if(channel==="pos.sale.created"){
         await service.updateSalesSummary({
-          date:new Date(),
+          date: new Date(event.timestamp),
           revenue:event.data.netAmount,
           tax:event.data.taxAmount
         });
@@ -44,11 +46,26 @@ export const startConsumer = async () => {
       }
 
       if(channel==="inventory.stock.updated"){
-        await service.updateInventory(event.data);
+        await service.updateInventory({
+          product_id: event.data.product_id,
+          branch_id: event.data.branch_id,
+          current_stock: event.data.current_stock,
+          stock_value: event.data.stock_value
+        });
       }
 
       if(channel==="procurement.order.received"){
-        // update supplier summary
+        if(channel==="procurement.order.received"){
+
+          for(const item of event.data.items){
+            await service.updateSupplier({
+              supplier_id: event.data.supplierId || 0, // fallback if missing
+              branch_id: event.data.branchId,
+              amount: item.cost * item.quantityReceived
+            });
+          }
+        
+        }
       }
 
       if(channel==="hr.payroll.generated"){

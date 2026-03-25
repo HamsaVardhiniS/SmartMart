@@ -47,20 +47,25 @@ export const updateProductSales = async(data:any)=>{
 
 /* INVENTORY */
 
-export const updateInventory = async(data:any)=>{
- return prisma.inventorySummary.upsert({
-  where:{
-   product_id_branch_id:{
-    product_id:data.product_id,
-    branch_id:data.branch_id
-   }
-  },
-  update:{
-   current_stock:data.stock,
-   stock_value:data.value
-  },
-  create:data
- });
+export const updateInventory = async (data: any) => {
+  return prisma.inventorySummary.upsert({
+    where: {
+      product_id_branch_id: {
+        product_id: data.product_id,
+        branch_id: data.branch_id
+      }
+    },
+    update: {
+      current_stock: data.current_stock,
+      stock_value: data.stock_value
+    },
+    create: {
+      product_id: data.product_id,
+      branch_id: data.branch_id,
+      current_stock: data.current_stock,
+      stock_value: data.stock_value
+    }
+  });
 };
 
 /* PAYROLL */

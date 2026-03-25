@@ -156,15 +156,19 @@ export const receiveGoods = async (
       data: { status }
     });
 
+    const order = await tx.supplier_orders.findUnique({
+      where: { order_id: item.order_id }
+    });
+    
     await publishOrderReceived({
       orderId: item.order_id,
+      branchId: order?.branch_id,
       items: [{
         productId: item.product_id,
         quantityReceived: updatedItem.quantity_received,
         cost: item.unit_cost
       }]
     });
-
     return updatedItem;
   });
 };
