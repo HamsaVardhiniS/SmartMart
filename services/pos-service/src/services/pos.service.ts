@@ -1,5 +1,5 @@
 import prisma from "../config/db";
-import { publishSaleEvent, publishRefundEvent } from "../events/redis.publisher";
+import { publishSaleCreated, publishRefund } from "../events/redis.publisher";
 import { calculateTax } from "../utils/tax.calculator";
 import { generateInvoice } from "../utils/invoice.generator";
 import { uploadInvoice } from "../utils/s3.uploader";
@@ -78,11 +78,19 @@ export const createSale = async (data: any) => {
       });
     }
 
-    await publishSaleEvent({
-      transaction_id: sale.transaction_id,
-      branch_id: sale.branch_id,
-      total_amount: sale.total_amount,
-      items: data.items
+    await publishSaleCreated({
+      transactionId: sale.transaction_id,
+      branchId: sale.branch_id,
+      customerId: sale.customer_id,
+      totalAmount: sale.total_amount,
+      taxAmount: sale.tax_amount,
+      netAmount: sale.net_amount,
+      items: data.items.map((i:any)=>({
+        productId: i.product_id,
+        batchId: i.batch_id,
+        quantity: i.quantity,
+        price: i.price
+      }))
     });
 
     const invoice = generateInvoice(sale, items);
@@ -137,8 +145,8 @@ export const cancelSale = async (id: number) => {
     data: { transaction_status: "CANCELLED" }
   });
 
-  await publishRefundEvent({
-    transaction_id: id,
+  await publishRefund({
+    transactionId: id,
     reason: "SALE_CANCELLED"
   });
 
@@ -208,8 +216,8 @@ export const processRefund = async (data: any) => {
       });
     }
 
-    await publishRefundEvent({
-      transaction_id: data.transaction_id,
+    await publishRefund({
+      transactionId: data.transaction_id,
       items: data.items
     });
 

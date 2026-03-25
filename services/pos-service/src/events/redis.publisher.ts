@@ -1,77 +1,30 @@
 import redis from "../config/redis";
-import { logger } from "../config/logger";
-import { randomUUID } from "crypto";
+import { createEvent } from "../utils/event.util";
 
-export const CHANNELS = {
-  SALES: "pos.sales",
-  REFUNDS: "pos.refunds"
+const publish = async (channel: string, event: any) => {
+  await redis.publish(channel, JSON.stringify(event));
 };
 
-const sanitize = (event: any) =>
-  JSON.parse(
-    JSON.stringify(event, (_, value) =>
-      typeof value === "bigint" ? Number(value) : value
-    )
-  );
-
-const ensureConnection = async () => {
-  if (redis.status !== "ready") {
-    await redis.connect();
-  }
+/* SALE CREATED */
+export const publishSaleCreated = async (data: any) => {
+  const event = createEvent("pos.sale.created.v1", "pos-service", data);
+  await publish("pos.sale.created", event);
 };
 
-/* SALE EVENT */
-
-export const publishSaleEvent = async (event: any) => {
-  try {
-    await ensureConnection();
-
-    const payload = {
-      event_id: randomUUID(),
-      event_type: "SALE_CREATED",
-      service: process.env.SERVICE_NAME || "pos-service",
-      timestamp: new Date().toISOString(),
-      data: sanitize(event)
-    };
-
-    const subscribers = await redis.publish(
-      CHANNELS.SALES,
-      JSON.stringify(payload)
-    );
-
-    if (subscribers === 0) {
-      logger.warn("No subscribers for SALE_CREATED event");
-    }
-
-  } catch (err: any) {
-    logger.error(`Failed to publish SALE event: ${err.message}`);
-  }
+/* PAYMENT COMPLETED */
+export const publishPaymentCompleted = async (data: any) => {
+  const event = createEvent("pos.payment.completed.v1", "pos-service", data);
+  await publish("pos.payment.completed", event);
 };
 
-/* REFUND EVENT */
+/* SALE CANCELLED */
+export const publishSaleCancelled = async (data: any) => {
+  const event = createEvent("pos.sale.cancelled.v1", "pos-service", data);
+  await publish("pos.sale.cancelled", event);
+};
 
-export const publishRefundEvent = async (event: any) => {
-  try {
-    await ensureConnection();
-
-    const payload = {
-      event_id: randomUUID(),
-      event_type: "REFUND_PROCESSED",
-      service: process.env.SERVICE_NAME || "pos-service",
-      timestamp: new Date().toISOString(),
-      data: sanitize(event)
-    };
-
-    const subscribers = await redis.publish(
-      CHANNELS.REFUNDS,
-      JSON.stringify(payload)
-    );
-
-    if (subscribers === 0) {
-      logger.warn("No subscribers for REFUND event");
-    }
-
-  } catch (err: any) {
-    logger.error(`Failed to publish REFUND event: ${err.message}`);
-  }
+/* REFUND */
+export const publishRefund = async (data: any) => {
+  const event = createEvent("pos.sale.refunded.v1", "pos-service", data);
+  await publish("pos.sale.refunded", event);
 };

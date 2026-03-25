@@ -127,3 +127,14 @@ WHERE transaction_status = 'COMPLETED'
 AND customer_id IS NOT NULL
 GROUP BY branch_id, customer_id;
 
+CREATE TABLE event_log (
+  event_id TEXT PRIMARY KEY,
+  processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE failed_events (
+  event_id TEXT,
+  payload JSONB,
+  error TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

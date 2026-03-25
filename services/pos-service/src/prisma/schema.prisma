@@ -155,3 +155,16 @@ model customer_lifetime_summary {
 
   @@id([branch_id, customer_id])
 }
+
+model event_log {
+  event_id     String   @id
+  processed_at DateTime @default(now())
+}
+
+model failed_events {
+  id         Int      @id @default(autoincrement())
+  event_id   String
+  payload    Json
+  error      String
+  created_at DateTime @default(now())
+}

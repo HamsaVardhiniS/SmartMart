@@ -72,3 +72,16 @@ model supplier_payments {
   suppliers       suppliers? @relation(fields: [supplier_id], references: [supplier_id])
   supplier_orders supplier_orders? @relation(fields: [order_id], references: [order_id])
 }
+
+model event_log {
+  event_id     String   @id
+  processed_at DateTime @default(now())
+}
+
+model failed_events {
+  id         Int      @id @default(autoincrement())
+  event_id   String
+  payload    Json
+  error      String
+  created_at DateTime @default(now())
+}

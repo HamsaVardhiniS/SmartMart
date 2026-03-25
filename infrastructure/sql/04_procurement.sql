@@ -44,3 +44,15 @@ CREATE TABLE supplier_payments (
 );
 
 CREATE INDEX idx_supplier_orders_supplier ON supplier_orders(supplier_id);
+
+CREATE TABLE event_log (
+  event_id TEXT PRIMARY KEY,
+  processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE failed_events (
+  event_id TEXT,
+  payload JSONB,
+  error TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

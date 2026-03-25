@@ -1,25 +1,26 @@
 import redis from "../config/redis";
+import prisma from "../config/db";
 import * as service from "../services/admin.service";
 
-export const startConsumer=()=>{
+export const startConsumer = async () => {
 
- const sub=redis.duplicate();
+  const sub = redis.duplicate();
 
-sub.subscribe("audit.log", (err) => {
-  if (err) {
-    console.error("Subscription failed:", err.message);
-  }
-});
+  await sub.subscribe(
+    "pos.sale.cancelled",
+    "inventory.stock.updated",
+    "admin.role.updated"
+  );
 
- sub.on("message", async (channel, message) => {
-  try {
-    const data = JSON.parse(message);
+  sub.on("message", async (_, message) => {
 
-    if (channel === "audit.log") {
-      await service.logAction(data);
-    }
-  } catch (err: any) {
-    console.error("Redis consumer error:", err.message);
-  }
-});
+    const event = JSON.parse(message);
+
+    try {
+      await service.logAction({
+        action:event.eventType,
+        metadata:event.data
+      });
+    } catch {}
+  });
 };

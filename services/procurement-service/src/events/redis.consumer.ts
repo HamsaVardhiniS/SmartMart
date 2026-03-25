@@ -1,31 +1,35 @@
-import Redis from "ioredis";
-import { logger } from "../config/logger";
-
-const subscriber = new Redis(process.env.REDIS_URL!);
+import redis from "../config/redis";
+import prisma from "../config/db";
 
 export const startConsumer = async () => {
-  try {
-    await subscriber.subscribe("inventory-events");
+  const sub = redis.duplicate();
 
-    logger.info("Subscribed to inventory-events");
+  await sub.subscribe("inventory.stock.low");
 
-    subscriber.on("message", async (channel, message) => {
-      try {
-        const event = JSON.parse(message);
+  sub.on("message", async (_, message) => {
+    const event = JSON.parse(message);
 
-        switch (event.type) {
-          case "STOCK_RECEIVED":
-            logger.info(`Stock received event consumed: ${message}`);
-            break;
-
-          default:
-            logger.warn(`Unhandled event type: ${event.type}`);
-        }
-      } catch (err: any) {
-        logger.error(`Error processing message: ${err.message}`);
-      }
+    const exists = await prisma.event_log.findUnique({
+      where: { event_id: event.eventId }
     });
-  } catch (error: any) {
-    logger.error(`Redis consumer failed: ${error.message}`);
-  }
+
+    if (exists) return;
+
+    try {
+      // trigger reorder logic
+
+      await prisma.event_log.create({
+        data:{event_id:event.eventId}
+      });
+
+    } catch (err:any) {
+      await prisma.failed_events.create({
+        data:{
+          event_id:event.eventId,
+          payload:event,
+          error:err.message
+        }
+      });
+    }
+  });
 };

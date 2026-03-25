@@ -1,5 +1,5 @@
 import prisma from "../config/db";
-import { publishStockReceived } from "../events/inventory.publisher";
+import { publishOrderReceived } from "../events/redis.publisher";
 import { Prisma } from "@prisma/client";
 
 /* ---------------- CREATE ORDER ---------------- */
@@ -156,7 +156,14 @@ export const receiveGoods = async (
       data: { status }
     });
 
-    await publishStockReceived(updatedItem);
+    await publishOrderReceived({
+      orderId: item.order_id,
+      items: [{
+        productId: item.product_id,
+        quantityReceived: updatedItem.quantity_received,
+        cost: item.unit_cost
+      }]
+    });
 
     return updatedItem;
   });

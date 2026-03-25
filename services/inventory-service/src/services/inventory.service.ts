@@ -139,20 +139,24 @@ export const getStock = async(product:number,branch:number)=>{
 /* FIFO SALE */
 
 export const processSale = async (
- product:number,
- branch:number,
- quantity:number,
- ref:number
+  product_id: number,
+  branch_id: number,
+  quantity: number,
+  reference_id: number,
+  batch_id: number
 ) => {
 
- return prisma.$executeRaw`
- SELECT process_sale(
- ${product}::INT,
- ${branch}::INT,
- ${quantity}::INT,
- ${ref}::INT
- )
- `;
+  return prisma.inventoryBatch.update({
+    where: {
+      batch_id: batch_id
+    },
+    data: {
+      quantity: {
+        decrement: quantity
+      }
+    }
+  });
+
 };
 
 /* REPORTS */

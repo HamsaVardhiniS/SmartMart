@@ -12,6 +12,15 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "OK",
+    service: process.env.SERVICE_NAME || "procurement-service",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
+});
+
 app.use((req, res, next) => {
   const oldJson = res.json;
 

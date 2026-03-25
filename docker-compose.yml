@@ -8,8 +8,8 @@ services:
   pos-service:
     build: ./services/pos-service
     ports:
-      - "4001:4001"
-    env_file: .env
+      - "4005:4005"
+    env_file: ./services/pos-service/.env
     depends_on:
       - redis
       - postgres
@@ -19,8 +19,8 @@ services:
   hr-service:
     build: ./services/hr-service
     ports:
-      - "4002:4002"
-    env_file: .env
+      - "4003:4003"
+    env_file: ./services/hr-service/.env
     depends_on:
       - redis
       - postgres
@@ -30,32 +30,32 @@ services:
   inventory-service:
     build: ./services/inventory-service
     ports:
-      - "4003:4003"
-    env_file: .env
+      - "4004:4004"
+    env_file: ./services/inventory-service/.env
     networks:
       - retail-net
 
   procurement-service:
     build: ./services/procurement-service
     ports:
-      - "4004:4004"
-    env_file: .env
+      - "4006:4006"
+    env_file: ./services/procurement-service/.env
     networks:
       - retail-net
 
   admin-service:
     build: ./services/admin-service
     ports:
-      - "4005:4005"
-    env_file: .env
+      - "4001:4001"
+    env_file: ./services/admin-service/.env
     networks:
       - retail-net
 
   analytics-service:
     build: ./services/analytics-service
     ports:
-      - "4006:4006"
-    env_file: .env
+      - "4002:4002"
+    env_file: ./services/analytics-service/.env
     networks:
       - retail-net
 

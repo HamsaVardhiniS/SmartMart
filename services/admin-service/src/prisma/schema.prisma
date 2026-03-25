@@ -89,3 +89,16 @@ model ApprovalRequest {
 
  @@map("approval_requests")
 }
+
+model event_log {
+  event_id     String   @id
+  processed_at DateTime @default(now())
+}
+
+model failed_events {
+  id         Int      @id @default(autoincrement())
+  event_id   String
+  payload    Json
+  error      String
+  created_at DateTime @default(now())
+}

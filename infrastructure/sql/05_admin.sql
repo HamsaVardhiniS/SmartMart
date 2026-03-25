@@ -63,3 +63,15 @@ CREATE TABLE approval_requests (
 
 CREATE INDEX idx_audit_user ON audit_logs(user_id);
 CREATE INDEX idx_audit_module_time ON audit_logs(module, timestamp);
+
+CREATE TABLE event_log (
+  event_id TEXT PRIMARY KEY,
+  processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE failed_events (
+  event_id TEXT,
+  payload JSONB,
+  error TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

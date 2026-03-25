@@ -1,31 +1,35 @@
 import redis from "../config/redis";
-import { logger } from "../config/logger";
+import prisma from "../config/db";
 
 export const startConsumer = async () => {
-  try {
-    if (redis.status !== "ready") {
-      await redis.connect();
-    }
+  const sub = redis.duplicate();
 
-    await redis.subscribe("pos.sales", "pos.refunds");
+  await sub.subscribe("payment.success", "payment.failed");
 
-    logger.info("Redis consumer subscribed");
+  sub.on("message", async (_, message) => {
+    const event = JSON.parse(message);
 
-    redis.on("message", (channel, message) => {
-      const data = JSON.parse(message);
-
-      logger.info(`Event received from ${channel}`);
-
-      if (channel === "pos.sales") {
-        // handle sale event
-      }
-
-      if (channel === "pos.refunds") {
-        // handle refund event
-      }
+    const exists = await prisma.event_log.findUnique({
+      where: { event_id: event.eventId }
     });
 
-  } catch (err: any) {
-    logger.error(`Consumer error: ${err.message}`);
-  }
+    if (exists) return;
+
+    try {
+      // handle payment if external later
+
+      await prisma.event_log.create({
+        data: { event_id: event.eventId }
+      });
+
+    } catch (err: any) {
+      await prisma.failed_events.create({
+        data: {
+          event_id: event.eventId,
+          payload: event,
+          error: err.message
+        }
+      });
+    }
+  });
 };

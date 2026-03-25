@@ -1,6 +1,6 @@
 import prisma from "../config/db";
 import bcrypt from "bcryptjs";
-
+import { publishPayroll } from "../events/redis.publisher";
 export const createEmployee = async (data: any) => {
   if (!data.password) {
     throw new Error("Password is required");

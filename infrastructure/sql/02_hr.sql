@@ -96,3 +96,15 @@ CREATE INDEX idx_payroll_employee ON payroll(employee_id);
 
 ALTER TABLE leave_balance 
 ALTER COLUMN remaining_leaves TYPE INT;
+
+CREATE TABLE event_log (
+  event_id TEXT PRIMARY KEY,
+  processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE failed_events (
+  event_id TEXT,
+  payload JSONB,
+  error TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

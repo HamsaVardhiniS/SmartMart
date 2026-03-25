@@ -72,3 +72,14 @@ CREATE INDEX idx_batches_branch_product ON inventory_batches(branch_id, product_
 CREATE INDEX idx_stock_product ON stock_movements(product_id);
 CREATE INDEX idx_stock_valuation_product ON stock_valuation(product_id);
 
+CREATE TABLE event_log (
+  event_id TEXT PRIMARY KEY,
+  processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE failed_events (
+  event_id TEXT,
+  payload JSONB,
+  error TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
