@@ -80,23 +80,22 @@ export const createSale = async (data: any) => {
       });
     }
 
-    eventId: randomUUID(),
-(
-      serializeBigInt({
-        transactionId: sale.transaction_id,
-        branchId: sale.branch_id,
-        customerId: sale.customer_id,
-        totalAmount: sale.total_amount,
-        taxAmount: sale.tax_amount,
-        netAmount: sale.net_amount,
-        items: data.items.map((i: any) => ({
-          productId: i.product_id,
-          batchId: i.batch_id,
-          quantity: i.quantity,
-          price: i.price
-        }))
-      })
-    );
+    const eventData = serializeBigInt({
+      transactionId: sale.transaction_id,
+      branchId: sale.branch_id,
+      customerId: sale.customer_id,
+      totalAmount: sale.total_amount,
+      taxAmount: sale.tax_amount,
+      netAmount: sale.net_amount,
+      items: data.items.map((i: any) => ({
+        productId: i.product_id,
+        batchId: i.batch_id,
+        quantity: i.quantity,
+        price: i.price
+      }))
+    });
+
+    await publishSaleCreated(eventData);
 
     const invoice = generateInvoice(
       serializeBigInt(sale),
