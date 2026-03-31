@@ -1,6 +1,7 @@
 import prisma from "../config/db";
 import redis from "../config/redis";
 import { logger } from "../config/logger";
+import { randomUUID } from "crypto";
 
 /* ROLE */
 export const createRole = async (data: any) => {
@@ -23,7 +24,7 @@ export const assignPermission = async (role: number, permission: number) => {
   });
 
   await redis.publish("admin.role.updated", JSON.stringify({
-    eventId: Date.now().toString(),
+    eventId: randomUUID(),
     eventType: "admin.role.updated.v1",
     timestamp: new Date().toISOString(),
     source: "admin-service",
@@ -52,7 +53,7 @@ export const setConfig = async (data: any) => {
   });
 
   await redis.publish("admin.config.updated", JSON.stringify({
-    eventId: Date.now().toString(),
+    eventId: randomUUID(),
     eventType: "admin.config.updated.v1",
     timestamp: new Date().toISOString(),
     source: "admin-service",
@@ -74,7 +75,7 @@ export const toggleFeature = async (data: any) => {
   });
 
   await redis.publish("admin.feature.updated", JSON.stringify({
-    eventId: Date.now().toString(),
+    eventId: randomUUID(),
     eventType: "admin.feature.updated.v1",
     timestamp: new Date().toISOString(),
     source: "admin-service",
@@ -120,7 +121,7 @@ export const getLogs = async () => {
 /* RESET */
 export const resetEmployeePassword = async (employee_id: number) => {
   await redis.publish("hr.employee.reset_password", JSON.stringify({
-    eventId: Date.now().toString(),
+    eventId: randomUUID(),
     eventType: "hr.employee.reset_password.v1",
     timestamp: new Date().toISOString(),
     source: "admin-service",
@@ -132,7 +133,7 @@ export const resetEmployeePassword = async (employee_id: number) => {
 /* DEPARTMENT */
 export const createDepartment = async (data: any) => {
   await redis.publish("admin.department.created", JSON.stringify({
-    eventId: Date.now().toString(),
+    eventId: randomUUID(),
     eventType: "admin.department.created.v1",
     timestamp: new Date().toISOString(),
     source: "admin-service",

@@ -35,8 +35,7 @@ export const startConsumer = async () => {
             item.productId,
             event.data.branchId,
             item.quantity,
-            event.data.transactionId,
-            item.batchId
+            event.data.transactionId
           );
 
           const stock = await service.getStock(
@@ -46,7 +45,6 @@ export const startConsumer = async () => {
 
           await publishStockUpdated({
             product_id: item.productId,
-            branch_id: event.data.branchId,
             current_stock: stock.total_stock,
             stock_value: 0
           });

@@ -128,14 +128,13 @@ export const createBatch = async (req: Request, res: Response, next: NextFunctio
 
 export const processSale = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { product_id, branch_id, quantity, reference_id, batch_id } = req.body;
+    const { product_id, branch_id, quantity, reference_id} = req.body;
 
     const data = await service.processSale(
       product_id,
       branch_id,
       quantity,
-      reference_id,
-      batch_id
+      reference_id
     );
 
     res.json(data);

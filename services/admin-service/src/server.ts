@@ -4,6 +4,9 @@ dotenv.config();
 import app from "./app";
 import { startConsumer } from "./events/redis.consumer";
 import { logger } from "./config/logger";
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
 
 const PORT = process.env.PORT || 4000;
 const SERVICE_NAME = process.env.SERVICE_NAME || "admin-service";

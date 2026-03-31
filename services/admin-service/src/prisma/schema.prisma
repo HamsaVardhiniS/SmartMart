@@ -98,7 +98,9 @@ model event_log {
 model failed_events {
   id         Int      @id @default(autoincrement())
   event_id   String
-  payload    Json
-  error      String
+  payload    Json?
+  error      String?
   created_at DateTime @default(now())
+
+  @@index([event_id])
 }

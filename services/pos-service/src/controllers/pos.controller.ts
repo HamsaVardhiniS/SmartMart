@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import * as service from "../services/pos.service";
-import { serializeBigInt } from "../utils/bigint.serializer";
+import { serializeBigInt } from "../utils/bigintSerializer";
 
 const handle =
   (fn: (req: Request) => Promise<any>) =>

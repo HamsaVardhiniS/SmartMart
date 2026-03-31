@@ -9,9 +9,9 @@ datasource db {
 
 model SalesSummaryDaily {
  summary_date DateTime @id
- total_revenue Decimal?
- total_tax Decimal?
- total_transactions Int?
+ total_revenue Decimal @default(0)
+ total_tax Decimal @default(0)
+ total_transactions Int @default(0)
 
  @@map("sales_summary_daily")
 }
@@ -19,8 +19,8 @@ model SalesSummaryDaily {
 model ProductSalesSummary {
  product_id Int
  branch_id Int
- total_quantity Int?
- total_revenue Decimal?
+ total_quantity Int @default(0)
+ total_revenue Decimal @default(0)
 
  @@id([product_id,branch_id])
  @@map("product_sales_summary")
@@ -29,8 +29,8 @@ model ProductSalesSummary {
 model InventorySummary {
  product_id Int
  branch_id Int
- current_stock Int?
- stock_value Decimal?
+ current_stock Int @default(0)
+ stock_value Decimal @default(0)
 
  @@id([product_id,branch_id])
  @@map("inventory_summary")
@@ -39,7 +39,7 @@ model InventorySummary {
 model PayrollSummary {
  payroll_month Int
  payroll_year Int
- total_payroll Decimal?
+ total_payroll Decimal @default(0)
 
  @@id([payroll_month,payroll_year])
  @@map("payroll_summary")
@@ -48,7 +48,7 @@ model PayrollSummary {
 model SupplierSummary {
  supplier_id Int
  branch_id Int
- total_purchase_value Decimal?
+ total_purchase_value Decimal @default(0)
 
  @@id([supplier_id,branch_id])
  @@map("supplier_summary")

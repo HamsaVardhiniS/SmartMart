@@ -1,8 +1,9 @@
 import redis from "../config/redis";
 import { createEvent } from "../utils/event.util";
-
+import { serializeBigInt } from "../utils/bigintSerializer";
 const publish = async (channel: string, event: any) => {
-  await redis.publish(channel, JSON.stringify(event));
+  const safeEvent = serializeBigInt(event);
+  await redis.publish(channel, JSON.stringify(safeEvent));
 };
 
 /* SALE CREATED */

@@ -4,6 +4,7 @@ import { calculateTax } from "../utils/tax.calculator";
 import { generateInvoice } from "../utils/invoice.generator";
 import { uploadInvoice } from "../utils/s3.uploader";
 import { Prisma } from "@prisma/client";
+import { serializeBigInt } from "../utils/bigintSerializer";
 
 /* CREATE SALE */
 
@@ -12,7 +13,7 @@ export const createSale = async (data: any) => {
     throw new Error("Sale must contain at least one item");
   }
 
-  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     let totalAmount = 0;
     let totalTax = 0;
 
@@ -79,22 +80,28 @@ export const createSale = async (data: any) => {
       });
     }
 
-    await publishSaleCreated({
-      transactionId: sale.transaction_id,
-      branchId: sale.branch_id,
-      customerId: sale.customer_id,
-      totalAmount: sale.total_amount,
-      taxAmount: sale.tax_amount,
-      netAmount: sale.net_amount,
-      items: data.items.map((i:any)=>({
-        productId: i.product_id,
-        batchId: i.batch_id,
-        quantity: i.quantity,
-        price: i.price
-      }))
-    });
+    eventId: randomUUID(),
+(
+      serializeBigInt({
+        transactionId: sale.transaction_id,
+        branchId: sale.branch_id,
+        customerId: sale.customer_id,
+        totalAmount: sale.total_amount,
+        taxAmount: sale.tax_amount,
+        netAmount: sale.net_amount,
+        items: data.items.map((i: any) => ({
+          productId: i.product_id,
+          batchId: i.batch_id,
+          quantity: i.quantity,
+          price: i.price
+        }))
+      })
+    );
 
-    const invoice = generateInvoice(sale, items);
+    const invoice = generateInvoice(
+      serializeBigInt(sale),
+      serializeBigInt(items)
+    );
 
     if (process.env.AWS_REGION && process.env.S3_BUCKET) {
       const fileUrl = await uploadInvoice(invoice, Number(sale.transaction_id));
@@ -107,8 +114,10 @@ export const createSale = async (data: any) => {
       });
     }
 
-    return { sale, invoice };
+    return { sale, invoice }; // 🔴 NO serialize here
   });
+
+  return serializeBigInt(result); // ✅ ONLY HERE
 };
 
 /* GET SALE */
@@ -146,12 +155,14 @@ export const cancelSale = async (id: number) => {
     data: { transaction_status: "CANCELLED" }
   });
 
-  await publishRefund({
+  await publishRefund(
+  serializeBigInt({
     transactionId: id,
     reason: "SALE_CANCELLED"
-  });
+  })
+);
 
-  return sale;
+  return serializeBigInt(sale);
 };
 
 /* ADD PAYMENT */
@@ -190,13 +201,13 @@ export const addPayment = async (data: any) => {
     });
   }
 
-  return payment;
+  return serializeBigInt(payment);
 };
 
 /* REFUND */
 
 export const processRefund = async (data: any) => {
-  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const refund = await tx.refund_transactions.create({
       data: {
         original_transaction_id: data.transaction_id,
@@ -217,12 +228,14 @@ export const processRefund = async (data: any) => {
       });
     }
 
-    await publishRefund({
-      transactionId: data.transaction_id,
-      items: data.items
-    });
+    await publishRefund(
+  serializeBigInt({
+    transactionId: data.transaction_id,
+    items: data.items
+  })
+);
 
-    return refund;
+    return serializeBigInt(refund);
   });
 };
 
@@ -230,7 +243,8 @@ export const processRefund = async (data: any) => {
 
 export const createCustomer = async (data: any) => {
   try {
-    return await prisma.customers.create({ data });
+  const result = await prisma.customers.create({ data });
+  return serializeBigInt(result);
   } catch (error: any) {
     if (error.code === "P2002") {
       throw new Error("Customer already exists");
@@ -246,85 +260,83 @@ export const getCustomer = async (id: number) => {
 
   if (!customer) throw new Error("Customer not found");
 
-  return customer;
+  return serializeBigInt(customer);
 };
 
 export const updateCustomer = async (id: number, data: any) => {
-  return prisma.customers.update({
-    where: { customer_id: id },
-    data
-  });
+  const result = await prisma.customers.update({
+  where: { customer_id: id },
+  data
+});
+
+return serializeBigInt(result);
 };
 
 /* CUSTOMER HISTORY */
 
 export const customerHistory = async (id: number) => {
-  return prisma.sales_transactions.findMany({
-    where: { customer_id: id },
-    include: {
-      sales_items: true
-    },
-    orderBy: {
-      transaction_date: "desc"
-    }
-  });
+  const result = await prisma.sales_transactions.findMany({
+  where: { customer_id: id },
+  include: { sales_items: true },
+  orderBy: { transaction_date: "desc" }
+});
+
+return serializeBigInt(result);
 };
 
 /* CUSTOMER LIFETIME SUMMARY */
 
 export const customerLifetimeSummary = async (id: number) => {
-  return prisma.customer_lifetime_summary.findMany({
-    where: {
-      customer_id: id
-    }
-  });
+  const result = await prisma.customer_lifetime_summary.findMany({
+  where: { customer_id: id }
+});
+
+return serializeBigInt(result);
 };
 
 /* CUSTOMER FEEDBACK */
 
 export const addFeedback = async (data: any) => {
-  return prisma.customer_feedback.create({
-    data
-  });
+  const result = await prisma.customer_feedback.create({
+  data
+});
+
+return serializeBigInt(result);
 };
 
 /* DAILY REVENUE */
 
 export const dailyRevenue = async () => {
-  return prisma.sales_transactions.aggregate({
-    where: {
-      transaction_status: "COMPLETED"
-    },
-    _sum: {
-      net_amount: true
-    }
-  });
+  const result = await prisma.sales_transactions.aggregate({
+  where: { transaction_status: "COMPLETED" },
+  _sum: { net_amount: true }
+});
+
+return serializeBigInt(result);
 };
 
 /* PAYMENT METHOD BREAKDOWN */
 
 export const paymentBreakdown = async () => {
-  return prisma.payments.groupBy({
-    by: ["payment_method"],
-    _sum: {
-      amount: true
-    }
-  });
+  const result = await prisma.payments.groupBy({
+  by: ["payment_method"],
+  _sum: { amount: true }
+});
+
+return serializeBigInt(result);
 };
 
 /* TOP SELLING PRODUCTS */
 
 export const topProducts = async () => {
-  return prisma.sales_items.groupBy({
-    by: ["product_id"],
-    _sum: {
-      quantity_sold: true
-    },
-    orderBy: {
-      _sum: {
-        quantity_sold: "desc"
-      }
-    },
-    take: 10
-  });
+  const result = await prisma.sales_items.groupBy({
+  by: ["product_id"],
+  _sum: { quantity_sold: true },
+  orderBy: {
+    _sum: { quantity_sold: "desc" }
+  },
+  take: 10
+});
+
+return serializeBigInt(result);
 };
