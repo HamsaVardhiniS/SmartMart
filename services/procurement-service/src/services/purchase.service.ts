@@ -41,6 +41,15 @@ export const createPurchaseOrder = async (data: {
   });
 };
 
+/* ---------------- LIST ORDERS ---------------- */
+export const getPurchaseOrders = async () => {
+  return prisma.supplier_orders.findMany({
+    orderBy: {
+      order_date: "desc"
+    }
+  });
+};
+
 /* ---------------- ADD ITEMS ---------------- */
 export const addOrderItems = async (
   orderId: bigint,

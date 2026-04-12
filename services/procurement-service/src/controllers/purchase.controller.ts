@@ -1,6 +1,16 @@
 import { Request, Response, NextFunction } from "express";
 import * as service from "../services/purchase.service";
 
+/* ---------------- LIST ORDERS ---------------- */
+export const getOrders = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const orders = await service.getPurchaseOrders();
+    res.json(orders);
+  } catch (err) {
+    next(err);
+  }
+};
+
 /* ---------------- CREATE ORDER ---------------- */
 export const createOrder = async (req: Request, res: Response, next: NextFunction) => {
   try {

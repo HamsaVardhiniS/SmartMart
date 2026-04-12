@@ -1,7 +1,12 @@
 import express from "express";
 import * as controller from "../controllers/admin.controller";
+import { authenticate } from "../middleware/auth.middleware";
 
 const router = express.Router();
+
+/* AUTH */
+router.post("/login", controller.login);
+router.get("/session", authenticate, controller.getSession);
 
 /* ROLE */
 router.post("/roles",controller.createRole);

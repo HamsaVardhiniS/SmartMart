@@ -1,6 +1,30 @@
 import { Request, Response, NextFunction } from "express";
 import * as service from "../services/admin.service";
 
+/* AUTH */
+export const login = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: "Username and password are required" });
+    }
+    const result = await service.login(username, password);
+    res.json(result);
+  } catch (err: any) {
+    res.status(401).json({ error: err.message });
+  }
+};
+
+export const getSession = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = (req as any).user;
+    const result = await service.getSessionProfile(user.user_id);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+};
+
 /* ROLE */
 export const createRole = async (req: Request, res: Response, next: NextFunction) => {
   try {

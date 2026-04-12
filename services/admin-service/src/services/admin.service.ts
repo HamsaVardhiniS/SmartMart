@@ -2,6 +2,83 @@ import prisma from "../config/db";
 import redis from "../config/redis";
 import { logger } from "../config/logger";
 import { randomUUID } from "crypto";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+
+/* AUTH */
+export const login = async (username: string, password: string) => {
+  const user = await prisma.adminUser.findUnique({
+    where: { username },
+    include: {
+      role: {
+        include: {
+          permissions: {
+            include: { permission: true }
+          }
+        }
+      }
+    }
+  });
+
+  if (!user || !user.is_active) {
+    throw new Error("Invalid credentials or inactive account");
+  }
+
+  const valid = await bcrypt.compare(password, user.password_hash);
+  if (!valid) {
+    throw new Error("Invalid credentials");
+  }
+
+  const permissions = user.role?.permissions.map(p => p.permission.permission_name) ?? [];
+
+  const token = jwt.sign(
+    {
+      user_id: user.user_id,
+      username: user.username,
+      role_id: user.role_id,
+      role_name: user.role?.role_name ?? null,
+      permissions
+    },
+    process.env.JWT_SECRET as string,
+    { expiresIn: "8h" }
+  );
+
+  return {
+    token,
+    user_id: user.user_id,
+    username: user.username,
+    role_id: user.role_id,
+    role_name: user.role?.role_name ?? null,
+    permissions
+  };
+};
+
+export const getSessionProfile = async (user_id: number | bigint) => {
+  const user = await prisma.adminUser.findUnique({
+    where: { user_id: Number(user_id) },
+    include: {
+      role: {
+        include: {
+          permissions: {
+            include: { permission: true }
+          }
+        }
+      }
+    }
+  });
+
+  if (!user || !user.is_active) {
+    throw new Error("User not found or inactive");
+  }
+
+  return {
+    user_id: user.user_id,
+    username: user.username,
+    role_id: user.role_id,
+    role_name: user.role?.role_name ?? null,
+    permissions: user.role?.permissions.map(p => p.permission.permission_name) ?? []
+  };
+};
 
 /* ROLE */
 export const createRole = async (data: any) => {
@@ -36,9 +113,15 @@ export const assignPermission = async (role: number, permission: number) => {
 
 /* USER */
 export const createUser = async (data: any) => {
+  if (!data.password && !data.password_hash) {
+    throw new Error("Password is required");
+  }
+  const password_hash = data.password_hash ?? await bcrypt.hash(data.password, 10);
+  const { password, ...rest } = data;
   return prisma.adminUser.create({
     data: {
-      ...data,
+      ...rest,
+      password_hash,
       role_id: data.role_id ?? undefined
     }
   });

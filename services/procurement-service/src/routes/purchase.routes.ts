@@ -3,6 +3,7 @@ import * as controller from "../controllers/purchase.controller";
 
 const router = Router();
 
+router.get("/orders", controller.getOrders);
 router.post("/orders", controller.createOrder);
 router.post("/orders/:orderId/items", controller.addItems);
 router.post("/items/:itemId/receive", controller.receiveGoods);
