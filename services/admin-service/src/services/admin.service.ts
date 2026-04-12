@@ -122,7 +122,7 @@ export const createUser = async (data: any) => {
     data: {
       ...rest,
       password_hash,
-      role_id: data.role_id ?? undefined
+      role_id: data.role_id ? parseInt(data.role_id) : undefined
     }
   });
 };

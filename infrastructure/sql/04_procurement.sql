@@ -51,6 +51,7 @@ CREATE TABLE event_log (
 );
 
 CREATE TABLE failed_events (
+  id SERIAL PRIMARY KEY,
   event_id TEXT,
   payload JSONB,
   error TEXT,

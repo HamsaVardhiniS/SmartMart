@@ -38,7 +38,7 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
 export const assignPermission = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { role_id, permission_id } = req.body;
-    const result = await service.assignPermission(role_id, permission_id);
+    const result = await service.assignPermission(parseInt(role_id), parseInt(permission_id));
     res.json(result);
   } catch (err) {
     next(err);

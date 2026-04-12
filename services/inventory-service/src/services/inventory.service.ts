@@ -6,6 +6,10 @@ import { serializeBigInt } from "../utils/bigintSerializer";
 /* PRODUCT MANAGEMENT */
 
 export const createProduct = async (data: any) => {
+  // Auto-generate SKU if not provided
+  if (!data.sku) {
+    data.sku = `SKU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
   const result = await prisma.product.create({ data });
   return serializeBigInt(result);
 };

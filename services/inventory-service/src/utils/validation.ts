@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const productSchema = z.object({
- sku: z.string(),
+ sku: z.string().optional(),
  barcode: z.string().optional(),
  product_name: z.string(),
  brand_id: z.number().optional(),
