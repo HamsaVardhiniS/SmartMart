@@ -9,16 +9,16 @@ services:
   # LOCALSTACK (AWS Simulation)
   # -------------------------
   localstack:
-    image: localstack/localstack
+    image: localstack/localstack:3.8.1
     container_name: retail-localstack
     ports:
       - "4566:4566"
     environment:
-      - LOCALSTACK_AUTH_TOKEN=ls-REJupESU-0702-Biwo-4798-mAwuvINu4e0f
       - SERVICES=s3
       - DEFAULT_REGION=us-east-1
       - AWS_DEFAULT_REGION=us-east-1
-      - DEBUG=1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
     volumes:
       - localstack_data:/var/lib/localstack
       - ./infrastructure/localstack:/etc/localstack/init/ready.d
@@ -95,7 +95,6 @@ services:
       - retail-net
 
   # -------------------------
-  # DATABASE (FIXED)
   # -------------------------
   postgres:
     image: postgres:15
@@ -105,10 +104,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     volumes:
-      # ✅ PERSISTENT DATA (CRITICAL FIX)
       - postgres_data:/var/lib/postgresql/data
       
-      # ✅ INIT SCRIPTS (RUN ONLY FIRST TIME)
       - ./infrastructure/sql:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
@@ -116,7 +113,6 @@ services:
       - retail-net
 
   # -------------------------
-  # REDIS (FIXED)
   # -------------------------
   redis:
     image: redis:7
@@ -124,7 +120,6 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      # ✅ persist redis (optional but recommended)
       - redis_data:/data
       - ./infrastructure/redis/redis.conf:/usr/local/etc/redis/redis.conf
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
