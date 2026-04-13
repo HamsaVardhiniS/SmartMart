@@ -23,7 +23,7 @@ export default function Login() {
     event.preventDefault();
 
     if (!identifier.trim() || !password.trim()) {
-      setError('Email or username and password are both required.');
+      setError('Please enter your email/username and password.');
       return;
     }
 
@@ -35,7 +35,7 @@ export default function Login() {
       navigate(getDefaultRoute(profile.role_name), { replace: true });
     } catch (err) {
       const backendError = err?.response?.data?.message || err?.response?.data?.error;
-      setError(backendError || 'Authentication failed. Verify credentials and account status.');
+      setError(backendError || 'Invalid credentials. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -43,69 +43,59 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      <div className="login-shell">
-        <div className="login-copy">
-          <div className="login-logo">
-            <span>Smart</span>
-            <span>Mart</span>
-          </div>
-          <p className="login-kicker">Execution layer for retail operations</p>
-          <h1 className="login-title">Authenticate before any module is allowed to load.</h1>
-          <p className="login-subtitle">
-            Role-aware access, token-bound API traffic, and session-controlled routing are enforced from the entry gate.
-          </p>
-          <div className="login-highlights">
-            <div className="login-highlight">
-              <strong>Secure session</strong>
-              <span>Token expiry triggers automatic logout and route reset.</span>
-            </div>
-            <div className="login-highlight">
-              <strong>Permission-driven</strong>
-              <span>Role and permission state are hydrated immediately after sign-in.</span>
-            </div>
-            <div className="login-highlight">
-              <strong>Execution-ready</strong>
-              <span>Users land directly in the module that matches their operational role.</span>
-            </div>
-          </div>
+      <div className="login-card-centered">
+        <div className="login-logo-blue">
+          <span>Smart</span><span>Mart</span>
         </div>
+        <p className="login-tagline">Retail Operations Portal</p>
 
-        <div className="login-card">
-          <p className="login-form-label">Secure Sign In</p>
-          <h2 className="login-form-title">Single entry point</h2>
+        {sessionMessage && <div className="alert alert-info">{sessionMessage}</div>}
+        {error && <div className="alert alert-error">{error}</div>}
 
-          {sessionMessage && <div className="alert alert-info">{sessionMessage}</div>}
-          {error && <div className="alert alert-error">{error}</div>}
+        <form onSubmit={handleSubmit} className="login-form">
+          <div className="form-group">
+            <label className="form-label-blue">Email / Username</label>
+            <input
+              id="login-identifier"
+              type="text"
+              className="form-input-blue"
+              placeholder="Enter your email or username"
+              value={identifier}
+              onChange={(event) => setIdentifier(event.target.value)}
+              autoFocus
+            />
+          </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label className="form-label">Email / Username</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Enter email or username"
-                value={identifier}
-                onChange={(event) => setIdentifier(event.target.value)}
-                autoFocus
-              />
-            </div>
+          <div className="form-group">
+            <label className="form-label-blue">Password</label>
+            <input
+              id="login-password"
+              type="password"
+              className="form-input-blue"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </div>
 
-            <div className="form-group">
-              <label className="form-label">Password</label>
-              <input
-                type="password"
-                className="form-input"
-                placeholder="Enter password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </div>
+          <button
+            id="login-submit"
+            type="submit"
+            className="btn-login-blue"
+            disabled={loading}
+          >
+            {loading ? (
+              <span className="login-spinner-wrap">
+                <span className="login-spinner" />
+                Signing in…
+              </span>
+            ) : 'Sign In'}
+          </button>
+        </form>
 
-            <button type="submit" className="btn btn-primary login-submit" disabled={loading}>
-              {loading ? 'Authorizing…' : 'Login'}
-            </button>
-          </form>
-        </div>
+        <p className="login-footer-note">
+          Access is role-restricted. Contact your administrator if you need an account.
+        </p>
       </div>
     </div>
   );
