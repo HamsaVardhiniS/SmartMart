@@ -3,13 +3,18 @@ version: "3.9"
 services:
 
   # -------------------------
-  # API SERVICES
+  # API SERVICES (NO BUILD)
   # -------------------------
+
   pos-service:
-    build: ./services/pos-service
+    image: node:20
+    working_dir: /app
     ports:
       - "4005:4005"
     env_file: ./services/pos-service/.env
+    volumes:
+      - ./services/pos-service:/app
+    command: npm run start
     depends_on:
       - redis
       - postgres
@@ -17,10 +22,14 @@ services:
       - retail-net
 
   hr-service:
-    build: ./services/hr-service
+    image: node:20
+    working_dir: /app
     ports:
       - "4003:4003"
     env_file: ./services/hr-service/.env
+    volumes:
+      - ./services/hr-service:/app
+    command: npm run start
     depends_on:
       - redis
       - postgres
@@ -28,10 +37,14 @@ services:
       - retail-net
 
   inventory-service:
-    build: ./services/inventory-service
+    image: node:20
+    working_dir: /app
     ports:
       - "4004:4004"
     env_file: ./services/inventory-service/.env
+    volumes:
+      - ./services/inventory-service:/app
+    command: npm run start
     depends_on:
       - redis
       - postgres
@@ -39,10 +52,14 @@ services:
       - retail-net
 
   procurement-service:
-    build: ./services/procurement-service
+    image: node:20
+    working_dir: /app
     ports:
       - "4006:4006"
     env_file: ./services/procurement-service/.env
+    volumes:
+      - ./services/procurement-service:/app
+    command: npm run start
     depends_on:
       - redis
       - postgres
@@ -50,10 +67,14 @@ services:
       - retail-net
 
   admin-service:
-    build: ./services/admin-service
+    image: node:20
+    working_dir: /app
     ports:
       - "4001:4001"
     env_file: ./services/admin-service/.env
+    volumes:
+      - ./services/admin-service:/app
+    command: npm run start
     depends_on:
       - redis
       - postgres
@@ -61,19 +82,25 @@ services:
       - retail-net
 
   analytics-service:
-    build: ./services/analytics-service
+    image: node:20
+    working_dir: /app
     ports:
       - "4002:4002"
     env_file: ./services/analytics-service/.env
+    volumes:
+      - ./services/analytics-service:/app
+    command: npm run start
     depends_on:
       - redis
       - postgres
     networks:
       - retail-net
 
+
   # -------------------------
-  # DATABASE (FIXED)
+  # DATABASE
   # -------------------------
+
   postgres:
     image: postgres:15
     container_name: retail-postgres
@@ -82,35 +109,35 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     volumes:
-      # ✅ PERSISTENT DATA (CRITICAL FIX)
       - postgres_data:/var/lib/postgresql/data
-      
-      # ✅ INIT SCRIPTS (RUN ONLY FIRST TIME)
       - ./infrastructure/sql:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
     networks:
       - retail-net
 
+
   # -------------------------
-  # REDIS (FIXED)
+  # REDIS
   # -------------------------
+
   redis:
     image: redis:7
     container_name: retail-redis
     ports:
       - "6379:6379"
     volumes:
-      # ✅ persist redis (optional but recommended)
       - redis_data:/data
       - ./infrastructure/redis/redis.conf:/usr/local/etc/redis/redis.conf
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     networks:
       - retail-net
 
+
   # -------------------------
   # NGINX
   # -------------------------
+
   nginx:
     image: nginx:latest
     container_name: retail-nginx
@@ -124,9 +151,11 @@ services:
     networks:
       - retail-net
 
+
   # -------------------------
   # PROMETHEUS
   # -------------------------
+
   prometheus:
     image: prom/prometheus
     volumes:
@@ -136,9 +165,11 @@ services:
     networks:
       - retail-net
 
+
   # -------------------------
   # GRAFANA
   # -------------------------
+
   grafana:
     image: grafana/grafana
     ports:
@@ -150,16 +181,19 @@ services:
 
 
 # -------------------------
-# VOLUMES (CRITICAL)
+# VOLUMES
 # -------------------------
+
 volumes:
   postgres_data:
   redis_data:
   grafana_data:
 
+
 # -------------------------
 # NETWORK
 # -------------------------
+
 networks:
   retail-net:
     driver: bridge
