@@ -1,0 +1,47 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "./frontend", "run", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "admin-service",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "./services/admin-service", "run", "dev"],
+      "port": 4001
+    },
+    {
+      "name": "analytics-service",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "./services/analytics-service", "run", "dev"],
+      "port": 4002
+    },
+    {
+      "name": "hr-service",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "./services/hr-service", "run", "dev"],
+      "port": 4003
+    },
+    {
+      "name": "inventory-service",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "./services/inventory-service", "run", "dev"],
+      "port": 4004
+    },
+    {
+      "name": "pos-service",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "./services/pos-service", "run", "dev"],
+      "port": 4005
+    },
+    {
+      "name": "procurement-service",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "./services/procurement-service", "run", "dev"],
+      "port": 4006
+    }
+  ]
+}

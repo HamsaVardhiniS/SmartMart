@@ -5,6 +5,28 @@ services:
   # -------------------------
   # API SERVICES
   # -------------------------
+  # -------------------------
+  # LOCALSTACK (AWS Simulation)
+  # -------------------------
+  localstack:
+    image: localstack/localstack
+    container_name: retail-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - LOCALSTACK_AUTH_TOKEN=ls-REJupESU-0702-Biwo-4798-mAwuvINu4e0f
+      - SERVICES=s3
+      - DEFAULT_REGION=us-east-1
+      - AWS_DEFAULT_REGION=us-east-1
+      - DEBUG=1
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - ./infrastructure/localstack:/etc/localstack/init/ready.d
+    entrypoint: >
+      sh -c "find /etc/localstack/init -name '*.sh' -exec sed -i 's/\r//' {} + && docker-entrypoint.sh"
+    networks:
+      - retail-net
+
   pos-service:
     build: ./services/pos-service
     ports:
@@ -13,6 +35,7 @@ services:
     depends_on:
       - redis
       - postgres
+      - localstack
     networks:
       - retail-net
 
@@ -156,6 +179,7 @@ volumes:
   postgres_data:
   redis_data:
   grafana_data:
+  localstack_data:
 
 # -------------------------
 # NETWORK
