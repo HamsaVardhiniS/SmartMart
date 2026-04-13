@@ -53,4 +53,4 @@ Core services include:
 - Redis
 
 **Cloud**
-- AWS EC2
+- AWS LocalStack
